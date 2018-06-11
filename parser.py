@@ -1,7 +1,6 @@
 
 import re
 
-from . import dom
 from . import keywords
 from . import lang
 from . import misc
@@ -44,29 +43,22 @@ class ParserState(object):
         self.filename = ''
         self.filepath = ''
         # non-builtin macros
-        self.macros = {}
+        self.macros = trie.Trie()
         return
+
+    def add_function(self):
+
     pass
-
-
-def convert_string_to_dom(document):
-    """convert_string_to_dom(document) -- convert document string to DOM
-    object.
-    @param document(str) a string containing the entire document
-    @returns DOMObject the document DOM"""
-    tree = dom.DOMObject()
-    tree.append_child(dom.DOMString(document))
-    return tree
 
 
 def compile_document(filepath, filename, document):
     """compile_document(filepath, filename, document) -- extract headers and
-    generate document DOM from document string.
+    generate preprocessed document.
     @param filepath(str) path of file
     @param filename(str) name of file
     @param document(str) document string
     @returns headers(dict(str, str)) list of headers extracted from document
-    @returns tree(DOMObject) raw DOM of document, with headers removed"""
+    @returns document(str) document with headers removed"""
     lines = document.split('\n')
     # preproocess document headers
     n_header_begin = 0  # first non-empty line
@@ -121,5 +113,14 @@ def compile_document(filepath, filename, document):
         for i in range(n_header_begin, n_header_end + 1):
             lines[i] = ''
     # build dom tree
-    tree = convert_string_to_dom('\n'.join(lines))
-    return headers, tree
+    return headers, '\n'.join(lines)
+
+
+def parse_document(headers, document, target):
+    """parse_document(headers, document) -- convert document to type target
+    @param headers(dict(str, str)) headers
+    @param document(str) document string
+    @param target(str) 'web' or 'doc'
+    @returns document(str) converted document"""
+
+    return
