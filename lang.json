@@ -1,0 +1,15 @@
+{
+    "lang": {
+        "en-US": {
+            "Parser.Error.Header.Unterminated": "document header is not terminated with an end marker",
+            "Parser.Error.Header.EntryNoSeparator": "discovered document header entry without a separator",
+            "Parser.Error.Header.NoEntryIndex": "no suitable index for header entry",
+            "Parser.Error.Header.ConflictingIndex": "header entry index already exists",
+            
+        },
+        "zh-CN": {
+        },
+        "ja-JP": {
+        }
+    }
+}
