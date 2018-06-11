@@ -1,0 +1,44 @@
+--------------------------------------------------------------------------------
+title    | comTeXT example document
+tags     | hello, world
+language | en-US
+--------------------------------------------------------------------------------
+% the header would be read if and only if the first non-empty line
+% begins with 3 hyphens
+
+\usepackage{stdlib}
+% single line comment
+% render procedure: src->src->(web,doc)->(web,doc)
+
+\namespace{std}{
+    % newcommand and namespace must be indicated with indentation and not scope
+    % markers.
+    \newcommand{myfunction: py(a, b, c), src->web}{
+        return a + b + c
+    }
+    \newcommand{myfunction: raw(a, b, c), doc->doc}{
+        #a#b#c
+    }
+    \newcommand{(*,*): ctx(a), src->doc}{
+        \italic{a}
+    }  % not yet implemented, at least in a short time
+    \newenvironment{code: ctx(a, b), src->src, verbatim}{
+        \bold{code below}\br
+        #a
+        \italic{the language is #b}\br
+        % here you should define a verbatim block, and make sure this part of
+        % content would never be processed again
+    }
+}
+
+\begin{document}
+
+\begin{std@code}{c++}
+#include <iostream>
+#include <cstdlib>
+\end{std@code}
+
+\usenamespace{std}
+\std@myfunction{aaa}{bbb}{ccc}
+
+\end{document}
