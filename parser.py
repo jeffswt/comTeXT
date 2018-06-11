@@ -37,6 +37,9 @@ class ParserState(object):
         # location definition
         self.row = 0
         self.col = 0
+        # parser stack data
+        self.depth = 0  # recursion depth
+        self.end_marker = None
         # file properties
         self.filename = ''
         self.filepath = ''
@@ -47,17 +50,23 @@ class ParserState(object):
 
 
 def convert_string_to_dom(document):
-    lines = document.split('\n')
+    """convert_string_to_dom(document) -- convert document string to DOM
+    object.
+    @param document(str) a string containing the entire document
+    @returns DOMObject the document DOM"""
     tree = dom.DOMObject()
-    # insert lines and line breaks
-    for line in lines:
-        s = dom.DOMString(line)
-        tree.append_child(s)
-        tree.append_child(dom.DOMLineBreak())
+    tree.append_child(dom.DOMString(document))
     return tree
 
 
 def compile_document(filepath, filename, document):
+    """compile_document(filepath, filename, document) -- extract headers and
+    generate document DOM from document string.
+    @param filepath(str) path of file
+    @param filename(str) name of file
+    @param document(str) document string
+    @returns headers(dict(str, str)) list of headers extracted from document
+    @returns tree(DOMObject) raw DOM of document, with headers removed"""
     lines = document.split('\n')
     # preproocess document headers
     n_header_begin = 0  # first non-empty line
@@ -113,4 +122,4 @@ def compile_document(filepath, filename, document):
             lines[i] = ''
     # build dom tree
     tree = convert_string_to_dom('\n'.join(lines))
-    return tree
+    return headers, tree

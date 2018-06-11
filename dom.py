@@ -81,7 +81,7 @@ class DOMObject(object):
 
 
 class DOMString(DOMObject):
-    """Single line object, should not contain line breaks."""
+    """String object without format. May contain line breaks."""
 
     def __init__(self, data):
         DOMObject.__init__()
@@ -90,12 +90,4 @@ class DOMString(DOMObject):
 
     def get_string(self):
         return self.data['string']
-    pass
-
-
-class DOMLineBreak(DOMObject):
-    """Single line break."""
-
-    def get_string(self):
-        return '\n'
     pass
