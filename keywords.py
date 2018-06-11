@@ -10,6 +10,7 @@ scope_end = '}'
 
 # special characters
 ch_escape = '\\'
+ch_whitespace = '\\ '
 ch_unescape = '\\\\'  # compiles to escape character
 ch_comment = '%'
 
@@ -34,6 +35,7 @@ func_proc_doc_before = 'ctx->doc'
 func_proc_doc_after = 'doc->doc'
 func_proc_web_before = 'ctx->web'
 func_proc_web_after = 'web->web'
+func_verbatim = 'verbatim'
 
 # namespace related
 ns_marker = '@'
