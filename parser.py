@@ -4,6 +4,7 @@ import re
 from . import keywords
 from . import lang
 from . import misc
+from . import trie
 
 
 class ParserError(RuntimeError):
@@ -31,8 +32,6 @@ class ParserState(object):
     """Stores the current state of the parser."""
 
     def __init__(self):
-        """__init__() -- default state
-        @returns None"""
         # location definition
         self.row = 0
         self.col = 0
@@ -45,15 +44,11 @@ class ParserState(object):
         # non-builtin macros
         self.macros = trie.Trie()
         return
-
-    def add_function(self):
-
     pass
 
 
 def compile_document(filepath, filename, document):
-    """compile_document(filepath, filename, document) -- extract headers and
-    generate preprocessed document.
+    """Extract headers and generate preprocessed document.
     @param filepath(str) path of file
     @param filename(str) name of file
     @param document(str) document string
@@ -117,7 +112,7 @@ def compile_document(filepath, filename, document):
 
 
 def parse_document(headers, document, target):
-    """parse_document(headers, document) -- convert document to type target
+    """Convert document to a certain output format.
     @param headers(dict(str, str)) headers
     @param document(str) document string
     @param target(str) 'web' or 'doc'

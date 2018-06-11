@@ -1,9 +1,9 @@
 
 class Trie(object):
-    """Trie: dictionary tree"""
+    """Traversable dictionary tree."""
 
     class TrieNode(object):
-        """TrieNode: node for a dictionary tree"""
+        """Node for a dictionary tree."""
 
         def __init__(self, val, flag):
             self.key = val
@@ -14,7 +14,7 @@ class Trie(object):
         pass
 
     class TrieIterator(object):
-        """TrieIterator: iterator object"""
+        """Iterator object."""
 
         def __init__(self, trie):
             self.trie = trie
@@ -30,9 +30,9 @@ class Trie(object):
         return
 
     def insert(self, string, flag):
-        """insert(string, flag) -- insert string into tree
-        @params string(str) the string to insert
-        @params flag(...) the object to mark upon discovery of the string"""
+        """Insert string into the dictionary.
+        @param string(str) the string to insert
+        @param flag(...) the object to mark upon discovery of the string"""
         p = self.root
         for i in range(0, len(string)):
             ch = string[i]
@@ -47,8 +47,8 @@ class Trie(object):
         return
 
     def find(self, string):
-        """find(string) -- find string
-        @params string(str) the string to search for
+        """Find if string exists in dictionary and return its flag.
+        @param string(str) the string to search for
         @returns ... the flag of the string"""
         p = self.root
         for i in range(0, len(string)):
@@ -59,7 +59,7 @@ class Trie(object):
         return p.flag
 
     def traverse_tree(self):
-        """traverse_tree(self) -- generator used to traverse nodes."""
+        """Creates a generator used to traverse all nodes."""
         # set default pointer
         p = self.root
         stack = [iter(p.children)]

@@ -4,8 +4,7 @@ class JitFunction(object):
     and can be executed instantly with given parameters."""
 
     def __init__(self, function_name, arguments, global_vars, code):
-        """__init__(function_name, arguments, global_vars, code) -- initialize
-        dynamic function and compile code.
+        """Initialize dynamic function and compile code.
         @param function_name(str) function name
         @param arguments(list(str)) arguments to be used by this function,
             must correspond to the ones used in the function
@@ -31,7 +30,7 @@ class JitFunction(object):
         return
 
     def eval(self, *args):
-        """eval(*args) -- execute function and returns result
+        """Execute function and returns result.
         @param *args positional arguments to call the dynamic function
         @returns ... depending on function behavior
         @throws TypeError when positional arguments' number doesn't match

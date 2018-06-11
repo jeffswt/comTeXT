@@ -1,7 +1,4 @@
 
-import re
-
-
 class DOMError(RuntimeError):
     """Raised while performing an illegal operation on the DOM model"""
     pass
@@ -18,33 +15,33 @@ class DOMObject(object):
         return
 
     def __getitem__(self, key):
+        """x.__getitem__(y) <==> x[y]"""
         return self.data[key]
 
     def has_parent(self):
-        """has_parent()
+        """Returns True if has parent.
         @returns bool True if has parent"""
         return self.parent is not None
 
     def has_children(self):
-        """has_children()
+        """Returns True if has children.
         @returns bool True if has children"""
         return len(self.children) > 0
 
     def is_parent(self, node):
-        """is_parent(node)
+        """Returns True if self's parent is node.
         @param node(DOMObject) the node to check on
         @returns bool True if node is self's parent"""
         return self.parent == node and self in node.children
 
     def is_child(self, node):
-        """is_child(node)
+        """Returns True if node is a child of self.
         @param node(DOMObject) the node to check on
         @returns bool True if node is self's child"""
         return node.parent == self and node in self.children
 
     def insert_child(self, node, index):
-        """insert_child(node, index) -- insert node before index
-            behavior resembles that of list.insert(...)
+        """Insert node before index, resembles that of list.insert(...).
         @param node(DOMObject) the node to insert
         @param index(int) position of node after insertion
         @returns None"""
@@ -55,13 +52,13 @@ class DOMObject(object):
         return
 
     def prepend_child(self, node):
-        """prepend_child(node) -- insert node at the begin of its children
+        """Insert node at the begin of its children.
         @param node(DOMObject) the node to prepend
         @returns None"""
         return self.insert_child(node, 0)
 
     def append_child(self, node):
-        """append_child(node) -- insert node at the end of its children
+        """Insert node at the end of its children.
         @param node(DOMObject) the node to append
         @returns None"""
         if not node.has_parent():
@@ -71,7 +68,7 @@ class DOMObject(object):
         return
 
     def get_string(self):
-        """get_string() -- get string representation of this node
+        """Get string representation of this node.
         @returns str output"""
         res = ''
         for i in self.children:
