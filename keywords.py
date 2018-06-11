@@ -14,6 +14,8 @@ ch_whitespace = '\\ '
 ch_unescape = '\\\\'
 ch_comment = '%'
 ch_uncomment = '\\%'
+ch_scope_begin_esc = '\\{'
+ch_scope_end_esc = '\\}'
 
 # builtin keywords / functions
 kw_load_library = '\\usepackage'

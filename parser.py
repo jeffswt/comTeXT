@@ -37,8 +37,8 @@ class ParserState(object):
         self.col = 0
         self.pos = 0
         # parser stack data
+        self.target = ''  # 'web' or 'doc'
         self.depth = 0  # recursion depth
-        self.end_marker = None
         # file properties
         self.filepath = ''
         self.filename = ''
@@ -52,100 +52,134 @@ class ParserState(object):
     pass
 
 
-def compile_document(filepath, filename, document):
-    """Extract headers and generate preprocessed document.
-    @param filepath(str) path of file
-    @param filename(str) name of file
-    @param document(str) document string
-    @returns headers(dict(str, str)) list of headers extracted from document
-    @returns document(str) document with headers removed"""
-    lines = document.split('\n')
-    # preproocess document headers
-    n_header_begin = 0  # first non-empty line
-    n_header_end = 0  # header end
-    headers = {}  # dict of strings representing header entries
-    for i in range(0, len(lines)):
-        if len(re.sub(r' +$', r'', lines[i])) > 0:
-            break
-        n_header_begin += 1
-    # process header if exists
-    if lines[n_header_begin].startswith(keywords.header_marker_begin):
-        # locate header end
-        for i in range(n_header_begin + 1, len(lines)):
-            if lines[i].startswith(keywords.header_marker_end):
-                n_header_end = i
+class Parser(object):
+    """Document parser class"""
+
+    def __init__(self, filepath, filename, document, target):
+        self.filepath = filepath
+        self.filename = filename
+        self.headers = {}
+        self.document = document
+        self.target = target
+        return
+
+    def match_function(self, state, begin):
+        """Find longest match of function in document.
+        @param state(ParserState)
+        @param begin(int) position of match begin
+        @returns func(str) function name, '' if none matches"""
+        p = state.macros.root
+        func = ''
+        cur_str = ''
+        for i in range(begin, len(self.document)):
+            ch = self.document[i]
+            if ch not in p.children:
                 break
-        # if header end does not exists, report error
-        if n_header_end == 0:
-            raise ParserError({'row': len(lines)-1, 'col': 0, 'file': filename,
-                               'path': filepath, 'cause': lang.text(
-                               'Parser.Error.Header.Unterminated')})
-        # process header entries
-        last_header = ''
-        for i in range(n_header_begin + 1, n_header_end):
-            sects = lines[i].split(keywords.header_entry_separator)
-            # no separator, report error
-            if len(sects) <= 1:
-                err_msg = lang.text('Parser.Error.Header.EntryNoSeparator')
-                raise ParserError({'row': i, 'col': 0, 'file': filename,
-                                   'path': filepath, 'cause': err_msg})
-            # work on entry to form strings
-            str_left = sects[0]
-            str_right = keywords.header_entry_separator.join(sects[1:])
-            _nl, str_left, _ = misc.split_spaces(str_left)
-            _, str_right, _ = misc.split_spaces(str_right)
-            # case empty index, use previous header
-            if str_left == '':
-                if last_header == '':
-                    err_msg = lang.text('Parser.Error.Header.NoEntryIndex')
-                    raise ParserError({'row': i, 'col': 0, 'file': filename,
-                                       'path': filepath, 'cause': err_msg})
-                str_left = last_header
-                headers[str_left] += ' ' + str_right
-            # conflicting warning
-            if str_left in headers:
-                err_msg = lang.text('Parser.Error.Header.ConflictingIndex')
-                raise ParserError({'row': i, 'col': _nl, 'file': filename,
-                                   'path': filepath, 'cause': err_msg})
-            # insert into header list
-            headers[str_left] = str_right
-        # clearing header lines
-        for i in range(n_header_begin, n_header_end + 1):
-            lines[i] = ''
-    # build dom tree
-    return headers, '\n'.join(lines)
+            cur_str += ch
+            p = p.children[ch]
+            if p.flag is not None:
+                func = cur_str
+            pass
+        return func
 
+    def extract_headers(self):
+        """Extract headers and generate preprocessed document."""
+        lines = self.document.split('\n')
+        # preproocess document headers
+        self.headers = {}
+        n_header_begin = 0  # first non-empty line
+        n_header_end = 0  # header end
+        for i in range(0, len(lines)):
+            if len(re.sub(r' +$', r'', lines[i])) > 0:
+                break
+            n_header_begin += 1
+        # process header if exists
+        if lines[n_header_begin].startswith(keywords.header_marker_begin):
+            # locate header end
+            for i in range(n_header_begin + 1, len(lines)):
+                if lines[i].startswith(keywords.header_marker_end):
+                    n_header_end = i
+                    break
+            # if header end does not exists, report error
+            if n_header_end == 0:
+                err_msg = lang.text('Parser.Error.Header.Unterminated')
+                raise ParserError({'row': len(lines)-1, 'col': 0, 'file':
+                                   self.filename, 'path': self.filepath,
+                                   'cause': err_msg})
+            # process header entries
+            last_header = ''
+            for i in range(n_header_begin + 1, n_header_end):
+                sects = lines[i].split(keywords.header_entry_separator)
+                # no separator, report error
+                if len(sects) <= 1:
+                    err_msg = lang.text('Parser.Error.Header.EntryNoSeparator')
+                    raise ParserError({'row': i, 'col': 0, 'file': self.
+                                       filename, 'path': self.filepath,
+                                       'cause': err_msg})
+                # work on entry to form strings
+                str_left = sects[0]
+                str_right = keywords.header_entry_separator.join(sects[1:])
+                _nl, str_left, _ = misc.split_spaces(str_left)
+                _, str_right, _ = misc.split_spaces(str_right)
+                # case empty index, use previous header
+                if str_left == '':
+                    if last_header == '':
+                        err_msg = lang.text('Parser.Error.Header.NoEntryIndex')
+                        raise ParserError({'row': i, 'col': 0, 'file':
+                                           self.filename, 'path': self.
+                                           filepath, 'cause': err_msg})
+                    str_left = last_header
+                    self.headers[str_left] += ' ' + str_right
+                # conflicting warning
+                if str_left in self.headers:
+                    err_msg = lang.text('Parser.Error.Header.ConflictingIndex')
+                    raise ParserError({'row': i, 'col': _nl, 'file': self.
+                                       filename, 'path': self.filepath,
+                                       'cause': err_msg})
+                # insert into header list
+                self.headers[str_left] = str_right
+            # clearing header lines
+            for i in range(n_header_begin, n_header_end + 1):
+                lines[i] = ''
+        # build dom tree
+        self.document = '\n'.join(lines)
+        return
 
-def parse_document(filepath, filename, headers, document, target):
-    """Convert document to a certain output format.
-    @param filepath(str) path of file
-    @param filename(str) name of file
-    @param headers(dict(str, str)) headers
-    @param document(str) document string
-    @param target(str) 'web' or 'doc'
-    @returns document(str) converted document"""
-    state = ParserState()
-    # initialize parser state
-    state.row = 0
-    state.col = 0
-    state.pos = 0
-    state.depth = 0
-    state.end_marker = None
-    state.filepath = filepath
-    state.filename = filename
-    # load initial functions
-    # builtin special characters
-    # TODO: I want to add some functions!
-    state.add_function(keywords.ch_escape, ...)
-    state.add_function(keywords.ch_whitespace, ...)
-    state.add_function(keywords.ch_unescape, ...)
-    state.add_function(keywords.ch_comment, ...)
-    state.add_function(keywords.ch_uncomment, ...)
-    # builtin functions
-    state.add_function(keywords.kw_load_library, ...)
-    state.add_function(keywords.kw_namespace, ...)
-    state.add_function(keywords.kw_def_function, ...)
-    state.add_function(keywords.kw_environment_begin, ...)
-    # call recursive parser
-    ...
-    return
+    def parse_block(self, state, end_marker=None):
+        """Convert document portion to a certain output format.
+        @param state(ParserState) current state
+        @param end_marker(str/None) terminates until this is found."""
+        while state.pos < len(self.document):
+            ch = self.document[state.pos]
+            func = self.match_function(state, state.pos)
+        return
+
+    def parse_document(self):
+        """Convert document to a certain output format."""
+        state = ParserState()
+        # initialize parser state
+        state.row = 0
+        state.col = 0
+        state.pos = 0
+        state.target = self.target
+        state.depth = 0
+        state.filepath = self.filepath
+        state.filename = self.filename
+        # load initial functions
+        # builtin special characters
+        # TODO: I want to add some functions!
+        state.add_function(keywords.ch_whitespace, ...)
+        state.add_function(keywords.ch_unescape, ...)
+        state.add_function(keywords.ch_comment, ...)
+        state.add_function(keywords.ch_uncomment, ...)
+        state.add_function(keywords.ch_scope_begin_esc, ...)
+        state.add_function(keywords.ch_scope_end_esc, ...)
+        # builtin functions
+        state.add_function(keywords.kw_load_library, ...)
+        state.add_function(keywords.kw_namespace, ...)
+        state.add_function(keywords.kw_def_function, ...)
+        state.add_function(keywords.kw_environment_begin, ...)
+        # call recursive parser
+        self.parse_block(state)
+        return
+    pass
