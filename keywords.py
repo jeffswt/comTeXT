@@ -11,10 +11,11 @@ scope_end = '}'
 # special characters
 ch_escape = '\\'
 ch_whitespace = '\\ '
-ch_unescape = '\\\\'  # compiles to escape character
+ch_unescape = '\\\\'
 ch_comment = '%'
+ch_uncomment = '\\%'
 
-# builtin keywords
+# builtin keywords / functions
 kw_load_library = '\\usepackage'
 kw_namespace = '\\namespace'
 kw_def_function = '\\newcommand'

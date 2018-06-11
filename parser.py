@@ -35,14 +35,19 @@ class ParserState(object):
         # location definition
         self.row = 0
         self.col = 0
+        self.pos = 0
         # parser stack data
         self.depth = 0  # recursion depth
         self.end_marker = None
         # file properties
-        self.filename = ''
         self.filepath = ''
+        self.filename = ''
         # non-builtin macros
         self.macros = trie.Trie()
+        return
+
+    def add_function(self, function_name, function):
+        self.macros[function_name] = function
         return
     pass
 
@@ -111,11 +116,36 @@ def compile_document(filepath, filename, document):
     return headers, '\n'.join(lines)
 
 
-def parse_document(headers, document, target):
+def parse_document(filepath, filename, headers, document, target):
     """Convert document to a certain output format.
+    @param filepath(str) path of file
+    @param filename(str) name of file
     @param headers(dict(str, str)) headers
     @param document(str) document string
     @param target(str) 'web' or 'doc'
     @returns document(str) converted document"""
-
+    state = ParserState()
+    # initialize parser state
+    state.row = 0
+    state.col = 0
+    state.pos = 0
+    state.depth = 0
+    state.end_marker = None
+    state.filepath = filepath
+    state.filename = filename
+    # load initial functions
+    # builtin special characters
+    # TODO: I want to add some functions!
+    state.add_function(keywords.ch_escape, ...)
+    state.add_function(keywords.ch_whitespace, ...)
+    state.add_function(keywords.ch_unescape, ...)
+    state.add_function(keywords.ch_comment, ...)
+    state.add_function(keywords.ch_uncomment, ...)
+    # builtin functions
+    state.add_function(keywords.kw_load_library, ...)
+    state.add_function(keywords.kw_namespace, ...)
+    state.add_function(keywords.kw_def_function, ...)
+    state.add_function(keywords.kw_environment_begin, ...)
+    # call recursive parser
+    ...
     return

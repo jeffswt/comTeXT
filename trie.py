@@ -100,4 +100,9 @@ class Trie(object):
         if val is not None:
             raise KeyError(key)
         return val
+
+    def __setitem__(self, key, value):
+        """Set self[key] to value."""
+        self.insert(key, value)
+        return
     pass
