@@ -1,8 +1,8 @@
 
-class Trie(object):
+class Trie:
     """Traversable dictionary tree."""
 
-    class TrieNode(object):
+    class TrieNode:
         """Node for a dictionary tree."""
 
         def __init__(self, val, flag):
@@ -13,7 +13,7 @@ class Trie(object):
             return
         pass
 
-    class TrieIterator(object):
+    class TrieIterator:
         """Iterator object."""
 
         def __init__(self, trie):
@@ -97,7 +97,7 @@ class Trie(object):
     def __getitem__(self, key):
         """x.__getitem__(y) <==> x[y]"""
         val = self.find(key)
-        if val is not None:
+        if val is None:
             raise KeyError(key)
         return val
 

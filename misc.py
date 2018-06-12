@@ -7,18 +7,10 @@ def split_spaces(text):
     @returns lcnt(int) number of leading spaces
     @returns text(str) string with removed leading/trailing spaces
     @returns rcnt(int) number of trailing spaces"""
-    lcnt = 0
-    rcnt = 0
-    while lcnt < len(text):
-        if text[lcnt] != ' ':
-            break
-        lcnt += 1
-    text = text[:lcnt]
-    while rcnt < len(text):
-        if text[len(text) - rcnt - 1] != ' ':
-            break
-        rcnt += 1
-    text = text[-rcnt:]
+    t2 = text.lstrip(' ')
+    lcnt = len(text) - len(t2)
+    text = t2.rstrip(' ')
+    rcnt = len(t2) - len(text)
     return lcnt, text, rcnt
 
 

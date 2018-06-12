@@ -1,5 +1,5 @@
 
-class JitFunction(object):
+class JitFunction:
     """ JitFunction is a function dynamically loaded through raw Python code
     and can be executed instantly with given parameters."""
 

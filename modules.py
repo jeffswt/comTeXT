@@ -1,22 +1,15 @@
 
-from . import keywords
-from . import lang
-from . import misc
+import keywords
+import lang
+import misc
 
-from .error import ParserError
+from error import ParserError
 
 
-class ParserFunction(object):
-    """Function executed at certain substring occurences while parsing.
-    @var f_types(set(str)) set of available function modes, including:
-        keywords.func_proc_src_after
-        keywords.func_proc_doc_before
-        keywords.func_proc_doc_after
-        keywords.func_proc_web_before
-        keywords.func_proc_web_after"""
+class ParserFunction:
+    """Function executed at certain substring occurences while parsing."""
 
     def __init__(self):
-        self.f_types = set()
         return
 
     def parse(self, parser, state):
@@ -24,28 +17,28 @@ class ParserFunction(object):
     pass
 
 
-class PfChWhitespace(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
+class PfChEscape(ParserFunction):
+    def parse(self, parser, state):
+        err_msg = lang.text('Parser.Error.Function.UnknownFunction')
+        raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                           parser.filename, 'path': parser.filepath,
+                           'cause': err_msg})
+    pass
 
+
+class PfChWhitespace(ParserFunction):
     def parse(self, parser, state):
         return ' '
     pass
 
 
 class PfChUnescape(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         return keywords.ch_escape
     pass
 
 
 class PfChComment(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         kwpos = parser.match_next_keyword(state.pos, '\n')
         comment = ''
@@ -57,62 +50,44 @@ class PfChComment(ParserFunction):
 
 
 class PfChUncomment(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         return keywords.ch_comment
     pass
 
 
 class PfScopeBegin(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         err_msg = lang.text('Parser.Error.Scope.UnexpectedBeginMarker') %\
                             keywords.scope_begin
-        raise ParserError({'row': state.row, 'col': state.col, 'file':
+        raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
                            parser.filename, 'path': parser.filepath,
                            'cause': err_msg})
     pass
 
 
 class PfScopeEnd(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         err_msg = lang.text('Parser.Error.Scope.UnexpectedEndMarker') %\
                             keywords.scope_end
-        raise ParserError({'row': state.row, 'col': state.col, 'file':
+        raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
                            parser.filename, 'path': parser.filepath,
                            'cause': err_msg})
     pass
 
 
 class PfChScopeBeginEsc(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         return keywords.scope_begin
     pass
 
 
 class PfChScopeEndEsc(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         return keywords.scope_end
     pass
 
 
 class PfLoadLibrary(ParserFunction):
-    def __init__(self):
-        self.f_types = {keywords.func_proc_src_after}
-
     def parse(self, parser, state):
         m_begin = parser.match_next_keyword(keywords.scope_begin)
         if m_begin != state.pos:

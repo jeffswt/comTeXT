@@ -1,16 +1,16 @@
 
 import re
 
-from . import keywords
-from . import lang
-from . import misc
-from . import trie
-from . import modules
+import keywords
+import lang
+import misc
+import trie
+import modules
 
-from .error import ParserError
+from error import ParserError
 
 
-class ParserState(object):
+class ParserState:
     """Stores the current state of the parser."""
 
     def __init__(self):
@@ -31,6 +31,7 @@ class ParserState(object):
     def shift_forward(self, ch):
         """Shift position markers forward at character.
         @param ch(str[0]) character at current position"""
+        self.col += 1
         if ch == '\n':
             self.row += 1
             self.col = 0
@@ -71,7 +72,7 @@ class ParserState(object):
     pass
 
 
-class Parser(object):
+class Parser:
     """Document parser class"""
 
     def __init__(self, filepath, filename, document, target):
@@ -79,6 +80,7 @@ class Parser(object):
         self.filename = filename
         self.headers = {}
         self.document = document
+        self.source = document  # original, unmodified document
         self.target = target
         return
 
@@ -106,7 +108,7 @@ class Parser(object):
         @param begin(int)
         @param keyword(str)
         @returns res(int) -1 if failure"""
-        return self.document.find(keyword, start=begin)
+        return self.document.find(keyword, begin)
 
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
@@ -154,8 +156,7 @@ class Parser(object):
                         raise ParserError({'row': i, 'col': 0, 'file':
                                            self.filename, 'path': self.
                                            filepath, 'cause': err_msg})
-                    str_left = last_header
-                    self.headers[str_left] += ' ' + str_right
+                    self.headers[last_header] += ' ' + str_right
                 # conflicting warning
                 if str_left in self.headers:
                     err_msg = lang.text('Parser.Error.Header.ConflictingIndex')
@@ -163,6 +164,7 @@ class Parser(object):
                                        filename, 'path': self.filepath,
                                        'cause': err_msg})
                 # insert into header list
+                last_header = str_left
                 self.headers[str_left] = str_right
             # clearing header lines
             for i in range(n_header_begin, n_header_end + 1):
@@ -178,15 +180,16 @@ class Parser(object):
         output = ''
         while state.pos < len(self.document):
             ch = self.document[state.pos]
-            # check if end marker occured
-            flag_end = True
-            for i in range(state.pos, len(self.document)):
-                if self.document[i] != end_marker[i - state.pos]:
-                    flag_end = False
+            # check if end marker occured, only if there is an end marker
+            if end_marker is not None:
+                flag_end = True
+                for i in range(state.pos, len(self.document)):
+                    if self.document[i] != end_marker[i - state.pos]:
+                        flag_end = False
+                        break
+                if flag_end is True:
+                    state.shift_forward_mul(end_marker)
                     break
-            if flag_end is True:
-                state.shift_forward_mul(end_marker)
-                break
             # match function
             func_name = self.match_function(state, state.pos)
             # no function matches
@@ -208,7 +211,8 @@ class Parser(object):
             raise ParserError({'row': state.row, 'col': state.col, 'file':
                                self.filename, 'path': self.filepath,
                                'cause': err_msg})
-        return
+        # finally
+        return output
 
     def parse_document(self):
         """Convert document to a certain output format."""
@@ -224,6 +228,7 @@ class Parser(object):
         # load initial functions
         # builtin special characters
         # TODO: I want to add some functions!
+        state.add_function(keywords.ch_escape, modules.PfChEscape())
         state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
         state.add_function(keywords.ch_unescape, modules.PfChUnescape())
         state.add_function(keywords.ch_comment, modules.PfChComment())
@@ -240,6 +245,30 @@ class Parser(object):
         # state.add_function(keywords.kw_def_function, ...)
         # state.add_function(keywords.kw_def_environment, ...)
         # call recursive parser
-        self.parse_block(state)
+        self.document = self.parse_block(state)
         return
+
+    def parse(self):
+        try:
+            self.extract_headers()
+            self.parse_document()
+            return self.document
+        except ParserError as err:
+            cause = err.cause()
+            lines = self.source.split('\n')
+            err_res = '%s:%d:%d: error: %s\n%s\n%s^' %\
+                      (cause['file'], cause['row'] + 1, cause['col'] + 1,
+                       cause['cause'], lines[cause['row']], ' ' * cause['col'])
+            print(err_res, end='')
+        return ''
     pass
+
+
+f = open('test.tex', 'r', encoding='utf8')
+s = f.read()
+f.close()
+
+p = Parser('.', 'test.tex', s, 'web')
+r = p.parse()
+
+print(r)
