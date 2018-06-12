@@ -46,9 +46,38 @@ class ParserState(object):
         self.macros = trie.Trie()
         return
 
+    def shift_forward(self, ch):
+        """Shift position markers forward at character.
+        @param ch(str[0]) character at current position"""
+        if ch == '\n':
+            self.row += 1
+            self.col = 0
+        self.pos += 1
+        return
+
+    def shift_forward_mul(self, text):
+        """Shift position markers forward at multiple characters.
+        @param text(str) multiple characters"""
+        for i in text:
+            self.shift_forward(i)
+        return
+
     def add_function(self, function_name, function):
+        """Insert certain function into list.
+        @param function_name(str) match string
+        @param function(...) execution function"""
         self.macros[function_name] = function
         return
+
+    def has_function(self, function_name):
+        """If current scope has function, checked by its name
+        @param function_name(str) match string"""
+        return function_name in self.macros
+
+    def get_function_by_name(self, function_name):
+        """Get executable function by its name.
+        @param function_name(str) match string"""
+        return self.macros[function_name]
     pass
 
 
@@ -149,9 +178,39 @@ class Parser(object):
         """Convert document portion to a certain output format.
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
+        output = ''
         while state.pos < len(self.document):
             ch = self.document[state.pos]
-            func = self.match_function(state, state.pos)
+            # check if end marker occured
+            flag_end = True
+            for i in range(state.pos, len(self.document)):
+                if self.document[i] != end_marker[i - state.pos]:
+                    flag_end = False
+                    break
+            if flag_end is True:
+                state.shift_forward_mul(end_marker)
+                break
+            # match function
+            func_name = self.match_function(state, state.pos)
+            # no function matches
+            if func_name == '':
+                if ch != '\n':  # FIXME: should not ignore all line breaks
+                    output += ch
+                state.shift_forward(ch)
+                continue
+            else:
+                state.shift_forward_mul(func_name)
+            # parse function scope
+            func = state.get_function_by_name(func_name)
+            tmp = func.parse(self, state)
+            output += tmp
+        # expected end marker but none found
+        if end_marker is not None and state.pos == len(self.document) - 1:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
+                      end_marker
+            raise ParserError({'row': state.row, 'col': state.col, 'file':
+                               self.filename, 'path': self.filepath,
+                               'cause': err_msg})
         return
 
     def parse_document(self):
@@ -178,7 +237,7 @@ class Parser(object):
         state.add_function(keywords.kw_load_library, ...)
         state.add_function(keywords.kw_namespace, ...)
         state.add_function(keywords.kw_def_function, ...)
-        state.add_function(keywords.kw_environment_begin, ...)
+        state.add_function(keywords.kw_def_environment, ...)
         # call recursive parser
         self.parse_block(state)
         return
