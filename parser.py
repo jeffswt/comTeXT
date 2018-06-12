@@ -110,6 +110,32 @@ class Parser:
         @returns res(int) -1 if failure"""
         return self.document.find(keyword, begin)
 
+    def match_parsable_scope(self, state):
+        """Match immediate {...} and return contents.
+        @param state(ParserState)"""
+        m_begin = self.match_next_keyword(keywords.scope_begin)
+        if m_begin != state.pos:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
+                                keywords.scope_begin
+            raise ParserError({'row': state.row, 'col': state.col, 'file':
+                               self.filename, 'path': self.filepath,
+                               'cause': err_msg})
+        # find end marker
+        m_end = self.match_next_keyword(keywords.scope_end)
+        if m_end == -1:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
+                                keywords.scope_end
+            state.shift_to_end(self.document)
+            raise ParserError({'row': state.row, 'col': state.col, 'file':
+                               self.filename, 'path': self.filepath,
+                               'cause': err_msg})
+        # retrieve contents
+        res = misc.get_str_range(self.document, m_begin + len(keywords.
+                                 scope_begin), m_end - 1)
+        state.shift_forward_mul(keywords.scope_begin + res +
+                                keywords.scope_end)
+        return res
+
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
         lines = self.document.split('\n')
@@ -241,7 +267,7 @@ class Parser:
                            modules.PfChScopeEndEsc())
         # builtin functions
         state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
-        # state.add_function(keywords.kw_namespace, ...)
+        state.add_function(keywords.kw_namespace, modules.PfNamespace())
         # state.add_function(keywords.kw_def_function, ...)
         # state.add_function(keywords.kw_def_environment, ...)
         # call recursive parser

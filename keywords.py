@@ -19,7 +19,6 @@ ch_scope_end_esc = '\\}'
 
 # builtin keywords / functions
 kw_load_library = '\\usepackage'
-kw_namespace = '\\namespace'
 kw_def_function = '\\newcommand'
 kw_def_environment = '\\newenvironment'
 kw_environment_begin = '\\begin'
@@ -39,6 +38,3 @@ func_proc_doc_after = 'doc->doc'
 func_proc_web_before = 'ctx->web'
 func_proc_web_after = 'web->web'
 func_verbatim = 'verbatim'
-
-# namespace related
-ns_marker = '@'

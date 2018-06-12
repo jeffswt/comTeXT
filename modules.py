@@ -89,27 +89,7 @@ class PfChScopeEndEsc(ParserFunction):
 
 class PfLoadLibrary(ParserFunction):
     def parse(self, parser, state):
-        m_begin = parser.match_next_keyword(keywords.scope_begin)
-        if m_begin != state.pos:
-            err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
-                                keywords.scope_begin
-            raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               parser.filename, 'path': parser.filepath,
-                               'cause': err_msg})
-        # find end marker
-        m_end = parser.match_next_keyword(keywords.scope_end)
-        if m_end == -1:
-            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
-                                keywords.scope_end
-            state.shift_to_end(parser.document)
-            raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               parser.filename, 'path': parser.filepath,
-                               'cause': err_msg})
-        # get module name
-        module_name = misc.get_str_range(parser.document, m_begin + len(
-                                         keywords.scope_begin), m_end - 1)
-        # load module
-        module_name
+        module_name = parser.match_parsable_scope(state)
         # TODO: not yet implemented
-        return ''
+        return module_name
     pass
