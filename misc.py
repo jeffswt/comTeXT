@@ -20,3 +20,10 @@ def split_spaces(text):
         rcnt += 1
     text = text[-rcnt:]
     return lcnt, text, rcnt
+
+
+def get_str_range(text, left, right):
+    res = ''
+    for i in range(left, right + 1):
+        res += text[i]
+    return res

@@ -5,7 +5,10 @@
             "Parser.Error.Header.EntryNoSeparator": "discovered document header entry without a separator",
             "Parser.Error.Header.NoEntryIndex": "no suitable index for header entry",
             "Parser.Error.Header.ConflictingIndex": "header entry index already exists",
+            "Parser.Error.Scope.ExpectedBeginMarker": "expected '%s' before scope",
             "Parser.Error.Scope.ExpectedEndMarker": "expected '%s' at end of input",
+            "Parser.Error.Scope.UnexpectedBeginMarker": "unexpected '%s' opening",
+            "Parser.Error.Scope.UnexpectedEndMarker": "unexpected '%s' closing",
         },
         "zh-CN": {
         },

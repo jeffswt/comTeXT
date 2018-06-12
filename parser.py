@@ -5,27 +5,9 @@ from . import keywords
 from . import lang
 from . import misc
 from . import trie
+from . import modules
 
-
-class ParserError(RuntimeError):
-    """Raises error while intepreting document, should be catched and displayed
-    to user."""
-
-    default_value = {
-        'file': '',  # filename of error occurence
-        'path': '',  # path of file
-        'row': 0,  # error occured at row #0
-        'col': 0,  # error occured at column #0
-        'cause': '',  # reason of error
-    }
-
-    def __init__(self, cause):
-        self.__parser_cause__ = cause
-        return
-
-    def cause(self):
-        return self.__parser_cause__
-    pass
+from .error import ParserError
 
 
 class ParserState(object):
@@ -60,6 +42,14 @@ class ParserState(object):
         @param text(str) multiple characters"""
         for i in text:
             self.shift_forward(i)
+        return
+
+    def shift_to_end(self, text):
+        """Shift to document end.
+        @param text(str) entire document"""
+        begin = self.pos
+        for i in range(begin, len(text)):
+            self.shift_forward(text[i])
         return
 
     def add_function(self, function_name, function):
@@ -110,6 +100,13 @@ class Parser(object):
                 func = cur_str
             pass
         return func
+
+    def match_next_keyword(self, begin, keyword):
+        """Match position of next occurence of keyword starting from begin.
+        @param begin(int)
+        @param keyword(str)
+        @returns res(int) -1 if failure"""
+        return self.document.find(keyword, start=begin)
 
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
@@ -227,17 +224,21 @@ class Parser(object):
         # load initial functions
         # builtin special characters
         # TODO: I want to add some functions!
-        state.add_function(keywords.ch_whitespace, ...)
-        state.add_function(keywords.ch_unescape, ...)
-        state.add_function(keywords.ch_comment, ...)
-        state.add_function(keywords.ch_uncomment, ...)
-        state.add_function(keywords.ch_scope_begin_esc, ...)
-        state.add_function(keywords.ch_scope_end_esc, ...)
+        state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
+        state.add_function(keywords.ch_unescape, modules.PfChUnescape())
+        state.add_function(keywords.ch_comment, modules.PfChComment())
+        state.add_function(keywords.ch_uncomment, modules.PfChUncomment())
+        state.add_function(keywords.scope_begin, modules.PfScopeBegin())
+        state.add_function(keywords.scope_end, modules.PfScopeEnd())
+        state.add_function(keywords.ch_scope_begin_esc,
+                           modules.PfChScopeBeginEsc())
+        state.add_function(keywords.ch_scope_end_esc,
+                           modules.PfChScopeEndEsc())
         # builtin functions
-        state.add_function(keywords.kw_load_library, ...)
-        state.add_function(keywords.kw_namespace, ...)
-        state.add_function(keywords.kw_def_function, ...)
-        state.add_function(keywords.kw_def_environment, ...)
+        state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
+        # state.add_function(keywords.kw_namespace, ...)
+        # state.add_function(keywords.kw_def_function, ...)
+        # state.add_function(keywords.kw_def_environment, ...)
         # call recursive parser
         self.parse_block(state)
         return
