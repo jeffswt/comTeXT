@@ -120,7 +120,7 @@ class PfDefFunction(ParserFunction):
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
                                parser.filename, 'path': parser.filepath,
                                'cause': err_msg})
-        return text
+        return text.strip()
 
     def parse_function_def(parser, state, text):
         # get function name
@@ -142,6 +142,7 @@ class PfDefFunction(ParserFunction):
                       keywords.func_def_split))
         # parse params
         out = {
+            'name': func_name,
             'lang': '',
             'args': [],
             'mode': ''
@@ -164,8 +165,8 @@ class PfDefFunction(ParserFunction):
                 args = param[len(l):]
                 args = PfDefFunction.check_brackets(parser, state, args)
                 # parse arguments
-                args = list(i.strip() for i in args.split(
-                            keywords.func_param_split))
+                args = list(i.strip() for i in args.split(keywords.
+                            func_param_split)) if args != '' else []
                 out['lang'] = l
                 for arg in args:
                     verbatim = False
@@ -201,7 +202,7 @@ class PfDefFunction(ParserFunction):
             pass
         return out
 
-    def parse(self, parser, state):
+    def parse_function(parser, state):
         # get indentation
         indent = parser.get_current_indent(state)
         # analyze function description
@@ -231,6 +232,36 @@ class PfDefFunction(ParserFunction):
                                parser.filename, 'path': parser.filepath,
                                'cause': err_msg})
         code = '\n'.join(i[min_indent:] for i in lines)
-        print(params, code)
+        return params, code
+
+    def parse(self, parser, state):
+        params, code = PfDefFunction.parse_function(parser, state)
+        print(params)
         return ''
+    pass
+
+
+class PfDefEnvironment(ParserFunction):
+    def parse(self, parser, state):
+        params, code = PfDefFunction.parse_function(parser, state)
+        print(params)
+        return ''
+
+
+class PfEnvironmentBegin(ParserFunction):
+    def parse(self, parser, state):
+        err_msg = lang.text('Parser.Error.Environment.UnknownEnvironment')
+        raise ParserError({'row': state.row, 'col': state.col, 'file':
+                           parser.filename, 'path': parser.filepath,
+                           'cause': err_msg})
+    pass
+
+
+class PfEnvironmentEnd(ParserFunction):
+    def parse(self, parser, state):
+        err_msg = lang.text('Parser.Error.Scope.UnexpectedEndMarker') %\
+                            keywords.kw_environment_end
+        raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                           parser.filename, 'path': parser.filepath,
+                           'cause': err_msg})
     pass

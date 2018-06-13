@@ -269,8 +269,6 @@ class Parser:
         state.filepath = self.filepath
         state.filename = self.filename
         # load initial functions
-        # builtin special characters
-        # TODO: I want to add some functions!
         state.add_function(keywords.ch_escape, modules.PfChEscape())
         state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
         state.add_function(keywords.ch_unescape, modules.PfChUnescape())
@@ -282,10 +280,14 @@ class Parser:
                            modules.PfChScopeBeginEsc())
         state.add_function(keywords.ch_scope_end_esc,
                            modules.PfChScopeEndEsc())
-        # builtin functions
         state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
         state.add_function(keywords.kw_def_function, modules.PfDefFunction())
-        # state.add_function(keywords.kw_def_environment, ...)
+        state.add_function(keywords.kw_def_environment,
+                           modules.PfDefEnvironment())
+        state.add_function(keywords.kw_environment_begin,
+                           modules.PfEnvironmentBegin())
+        state.add_function(keywords.kw_environment_end,
+                           modules.PfEnvironmentEnd())
         # call recursive parser
         self.document = self.parse_block(state)
         return

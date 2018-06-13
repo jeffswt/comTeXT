@@ -17,7 +17,8 @@
             "Parser.Error.Function.ConflictLanguage": "conflicting language definition",
             "Parser.Error.Function.ConflictMode": "conflicting function type",
             "Parser.Error.Function.ForbidChar": "forbidden character in argument",
-            "Parser.Error.Function.UnknownParam": "unknown parameter"
+            "Parser.Error.Function.UnknownParam": "unknown parameter",
+            "Parser.Error.Environment.UnknownEnvironment": "environment name undeclared"
         },
         "zh-CN": {
         },
