@@ -41,3 +41,19 @@ def get_block_indent(text):
         if i != '' and not i.isspace():
             cnt.append(get_indent(i))
     return min(cnt)
+
+
+def listjoin(joint, elements, joint_is_array=False):
+    """Join elements with joint, and returns a list."""
+    elements = list(elements)
+    if len(elements) == 0:
+        return []
+    result = [elements[0]]
+    for i in range(1, len(elements)):
+        if not joint_is_array:
+            result.append(joint)
+        else:
+            for j in joint:
+                result.append(j)
+        result.append(elements[i])
+    return result

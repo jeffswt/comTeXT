@@ -50,3 +50,8 @@ func_proc = {
     func_proc_web_before,
     func_proc_web_after,
 }
+
+# jit function related
+jit_py_globals_classname = 'glob'
+jit_py_globals_initfunc = 'initvar'
+jit_raw_variable = '#%s'

@@ -265,3 +265,9 @@ class PfEnvironmentEnd(ParserFunction):
                            parser.filename, 'path': parser.filepath,
                            'cause': err_msg})
     pass
+
+
+class PfDynamicFunction(ParserFunction):
+    def parse(self, parser, state):
+        return ''
+    pass
