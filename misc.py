@@ -15,7 +15,29 @@ def split_spaces(text):
 
 
 def get_str_range(text, left, right):
+    """Get substring text[left...right]."""
     res = ''
     for i in range(left, right + 1):
         res += text[i]
     return res
+
+
+def get_indent(text):
+    """Get the number of leading spaces in text."""
+    res = 0
+    for i in text:
+        if i == ' ':
+            res += 1
+        else:
+            break
+    return res
+
+
+def get_block_indent(text):
+    """Get block minimum indentation."""
+    lines = text.split('\n')
+    cnt = []
+    for i in lines:
+        if i != '' and not i.isspace():
+            cnt.append(get_indent(i))
+    return min(cnt)

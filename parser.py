@@ -84,6 +84,21 @@ class Parser:
         self.target = target
         return
 
+    def get_current_indent(self, state):
+        """Get the indentation for current line, in spaces.
+        @param state(ParserState)
+        @returns indent(int)"""
+        indent = 0
+        for i in range(state.pos, -1, -1):
+            ch = self.document[state.pos]
+            if ch == '\n':
+                break
+            elif ch == ' ':
+                indent += 1
+            else:
+                indent = 0
+        return indent
+
     def match_function(self, state, begin):
         """Find longest match of function in document.
         @param state(ParserState)
@@ -103,38 +118,40 @@ class Parser:
             pass
         return func
 
-    def match_next_keyword(self, begin, keyword):
-        """Match position of next occurence of keyword starting from begin.
+    def match_next_keyword(self, begin, sub):
+        """Match position of next occurence of sub starting from begin.
         @param begin(int)
-        @param keyword(str)
+        @param sub(str)
         @returns res(int) -1 if failure"""
-        return self.document.find(keyword, begin)
+        return self.document.find(sub, begin)
+
+    def match_to_next_occurence(self, state, sub):
+        """Match until next occurence of ...sub.
+        @param state(ParserState)
+        @returns res(str) inner contents"""
+        pos = self.match_next_keyword(state.pos, sub)
+        if pos == -1:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') % sub
+            state.shift_to_end(self.document)
+            raise ParserError({'row': state.row, 'col': state.col, 'file':
+                               self.filename, 'path': self.filepath,
+                               'cause': err_msg})
+        res = misc.get_str_range(self.document, state.pos, pos - 1)
+        state.shift_forward_mul(res + sub)
+        return res
 
     def match_parsable_scope(self, state):
         """Match immediate {...} and return contents.
         @param state(ParserState)"""
-        m_begin = self.match_next_keyword(keywords.scope_begin)
+        m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
         if m_begin != state.pos:
             err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
                                 keywords.scope_begin
             raise ParserError({'row': state.row, 'col': state.col, 'file':
                                self.filename, 'path': self.filepath,
                                'cause': err_msg})
-        # find end marker
-        m_end = self.match_next_keyword(keywords.scope_end)
-        if m_end == -1:
-            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
-                                keywords.scope_end
-            state.shift_to_end(self.document)
-            raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               self.filename, 'path': self.filepath,
-                               'cause': err_msg})
-        # retrieve contents
-        res = misc.get_str_range(self.document, m_begin + len(keywords.
-                                 scope_begin), m_end - 1)
-        state.shift_forward_mul(keywords.scope_begin + res +
-                                keywords.scope_end)
-        return res
+        state.shift_forward_mul(keywords.scope_begin)
+        return self.match_to_next_occurence(state, keywords.scope_end)
 
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
@@ -267,8 +284,7 @@ class Parser:
                            modules.PfChScopeEndEsc())
         # builtin functions
         state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
-        state.add_function(keywords.kw_namespace, modules.PfNamespace())
-        # state.add_function(keywords.kw_def_function, ...)
+        state.add_function(keywords.kw_def_function, modules.PfDefFunction())
         # state.add_function(keywords.kw_def_environment, ...)
         # call recursive parser
         self.document = self.parse_block(state)

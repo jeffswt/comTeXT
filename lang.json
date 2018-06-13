@@ -9,7 +9,15 @@
             "Parser.Error.Scope.ExpectedEndMarker": "expected '%s' at end of input",
             "Parser.Error.Scope.UnexpectedBeginMarker": "unexpected '%s' opening",
             "Parser.Error.Scope.UnexpectedEndMarker": "unexpected '%s' closing",
-            "Parser.Error.Function.UnknownFunction": "undeclared function (maybe you meant \\\\?)"
+            "Parser.Error.Scope.Outdented": "outdented scope, expected indentation > %d",
+            "Parser.Error.Function.UnknownFunction": "undeclared function (maybe you meant \\\\?)",
+            "Parser.Error.Function.ExpectedLineBreak": "expected immediate line break after command",
+            "Parser.Error.Function.MissingDefMarker": "expected ':' in function definition",
+            "Parser.Error.Function.TooManyDefMarkers": "unexpected ':' after function name",
+            "Parser.Error.Function.ConflictLanguage": "conflicting language definition",
+            "Parser.Error.Function.ConflictMode": "conflicting function type",
+            "Parser.Error.Function.ForbidChar": "forbidden character in argument",
+            "Parser.Error.Function.UnknownParam": "unknown parameter"
         },
         "zh-CN": {
         },
