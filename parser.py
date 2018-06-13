@@ -125,12 +125,14 @@ class Parser:
         @returns res(int) -1 if failure"""
         return self.document.find(sub, begin)
 
-    def match_to_next_occurence(self, state, sub):
+    def match_to_next_occurence(self, state, sub, sub_display_error=None):
         """Match until next occurence of ...sub.
         @param state(ParserState)
         @returns res(str) inner contents"""
         pos = self.match_next_keyword(state.pos, sub)
         if pos == -1:
+            if sub_display_error is not None:
+                sub = sub_display_error
             err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') % sub
             state.shift_to_end(self.document)
             raise ParserError({'row': state.row, 'col': state.col, 'file':
@@ -140,7 +142,7 @@ class Parser:
         state.shift_forward_mul(res + sub)
         return res
 
-    def match_parsable_scope(self, state):
+    def match_verbatim_scope(self, state):
         """Match immediate {...} and return contents.
         @param state(ParserState)"""
         m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
@@ -152,6 +154,19 @@ class Parser:
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
         return self.match_to_next_occurence(state, keywords.scope_end)
+
+    def match_parsable_scope(self, state):
+        """Match {...} and return parsed contents.
+        @param state(ParserState)"""
+        m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
+        if m_begin != state.pos:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
+                                keywords.scope_begin
+            raise ParserError({'row': state.row, 'col': state.col, 'file':
+                               self.filename, 'path': self.filepath,
+                               'cause': err_msg})
+        state.shift_forward_mul(keywords.scope_begin)
+        return self.parse_block(state, end_marker=keywords.scope_end)
 
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
@@ -226,7 +241,8 @@ class Parser:
             # check if end marker occured, only if there is an end marker
             if end_marker is not None:
                 flag_end = True
-                for i in range(state.pos, len(self.document)):
+                for i in range(state.pos, min(len(self.document),
+                               state.pos + len(end_marker))):
                     if self.document[i] != end_marker[i - state.pos]:
                         flag_end = False
                         break
@@ -298,6 +314,7 @@ class Parser:
             self.parse_document()
             return self.document
         except ParserError as err:
+            raise err
             cause = err.cause()
             lines = self.source.split('\n')
             err_res = '%s:%d:%d: error: %s\n%s\n%s^' %\

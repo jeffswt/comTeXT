@@ -1,4 +1,5 @@
 
+import jitfunction
 import keywords
 import lang
 import misc
@@ -89,7 +90,7 @@ class PfChScopeEndEsc(ParserFunction):
 
 class PfLoadLibrary(ParserFunction):
     def parse(self, parser, state):
-        module_name = parser.match_parsable_scope(state)
+        module_name = parser.match_verbatim_scope(state)
         # TODO: not yet implemented
         return module_name
     pass
@@ -144,7 +145,7 @@ class PfDefFunction(ParserFunction):
         out = {
             'name': func_name,
             'lang': '',
-            'args': [],
+            'args': [],  # {'name': '...', 'verbatim': True}
             'mode': ''
         }
         for param in params:
@@ -206,7 +207,7 @@ class PfDefFunction(ParserFunction):
         # get indentation
         indent = parser.get_current_indent(state)
         # analyze function description
-        func_desc = parser.match_parsable_scope(state)
+        func_desc = parser.match_verbatim_scope(state)
         params = PfDefFunction.parse_function_def(parser, state, func_desc)
         # enforce code block format
         if parser.match_to_next_occurence(state, '{') != '':
@@ -236,7 +237,23 @@ class PfDefFunction(ParserFunction):
 
     def parse(self, parser, state):
         params, code = PfDefFunction.parse_function(parser, state)
-        print(params)
+        # retrieve dynamic function
+        fname = keywords.kw_dyn_function % params['name']
+        if state.has_function(fname):
+            is_new = False
+            func = state.get_function_by_name(fname)
+        else:
+            is_new = True
+            func = PfDynamicFunction()
+        # update parameters and code
+        if not func.update_config(params):
+            err_msg = lang.text('Parser.Error.Function.ParamMismatch')
+            raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                               parser.filename, 'path': parser.filepath,
+                               'cause': err_msg})
+        func.update_function(parser, state, params, code)
+        if is_new:
+            state.add_function(fname, func)
         return ''
     pass
 
@@ -244,8 +261,36 @@ class PfDefFunction(ParserFunction):
 class PfDefEnvironment(ParserFunction):
     def parse(self, parser, state):
         params, code = PfDefFunction.parse_function(parser, state)
-        print(params)
+        # retrieve dynamic function
+        fname = keywords.kw_dyn_environment_begin % params['name']
+        if state.has_function(fname):
+            is_new = False
+            func = state.get_function_by_name(fname)
+        else:
+            is_new = True
+            func = PfDynamicEnvironment()
+        # addition limits
+        if len(params['args']) == 0:
+            err_msg = lang.text('Parser.Error.Environment.TooFewArgs')
+            raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                               parser.filename, 'path': parser.filepath,
+                               'cause': err_msg})
+        if not params['args'][-1]['verbatim']:
+            err_msg = lang.text('Parser.Error.Environment.LastMustVerbatim')
+            raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                               parser.filename, 'path': parser.filepath,
+                               'cause': err_msg})
+        # update parameters and code
+        if not func.update_config(params):
+            err_msg = lang.text('Parser.Error.Function.ParamMismatch')
+            raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                               parser.filename, 'path': parser.filepath,
+                               'cause': err_msg})
+        func.update_function(parser, state, params, code)
+        if is_new:
+            state.add_function(fname, func)
         return ''
+    pass
 
 
 class PfEnvironmentBegin(ParserFunction):
@@ -268,6 +313,109 @@ class PfEnvironmentEnd(ParserFunction):
 
 
 class PfDynamicFunction(ParserFunction):
+    def __init__(self):
+        self.function_name = None
+        self.args_vb = None  # verbatim parse or not
+        self.mode = None
+        self.py_func = None
+        self.raw_func = None
+        return
+
+    def update_config(self, params):
+        """Update configuration of current function. Newly updated parameters
+        must be the same as the original.
+        @param params(dict(...)) taken from PfDefFunction
+        @returns bool True if modification succeeded"""
+        if self.function_name is not None:
+            if self.function_name != params['name']:
+                return False
+            if len(self.args_vb) != len(params['args']):
+                return False
+            for i in range(0, len(self.args_vb)):
+                if self.args_vb[i] != params['args']['verbatim']:
+                    return False
+            if self.mode != params['mode']:
+                return False
+            return True
+        self.function_name = params['name']
+        self.args_vb = list(i['verbatim'] for i in params['args'])
+        self.mode = params['mode']
+        return True
+
+    def update_function(self, parser, state, params, code):
+        fname = params['name']
+        args = list(i['name'] for i in params['args'])
+        if params['lang'] == keywords.func_lang_py:
+            if self.py_func is not None:
+                err_msg = lang.text('Parser.Error.Function.ConflictCode')
+                raise ParserError({'row': state.row, 'col': state.col - 1,
+                                   'file': parser.filename, 'path': parser.
+                                   filepath, 'cause': err_msg})
+            self.py_func = jitfunction.JitFunctionPy(fname, args, code)
+        elif params['lang'] == keywords.func_lang_raw:
+            if self.raw_func is not None:
+                err_msg = lang.text('Parser.Error.Function.ConflictCode')
+                raise ParserError({'row': state.row, 'col': state.col - 1,
+                                   'file': parser.filename, 'path': parser.
+                                   filepath, 'cause': err_msg})
+            self.raw_func = jitfunction.JitFunctionRaw(fname, args, code)
+        return
+
     def parse(self, parser, state):
-        return ''
+        args = []
+        for verbatim in self.args_vb:
+            if verbatim:
+                args.append(parser.match_verbatim_scope(state))
+            else:
+                args.append(parser.match_parsable_scope(state))
+        # call function
+        res = ''
+        if self.raw_func is not None:
+            res = str(self.raw_func.eval(*args))
+        elif self.py_func is not None:
+            res = str(self.py_func.eval(*args))
+        return res
+    pass
+
+
+class PfDynamicEnvironment(ParserFunction):
+    def __init__(self):
+        self.function_name = None
+        self.args_vb = None  # verbatim parse or not
+        self.mode = None
+        self.py_func = None
+        self.raw_func = None
+        return
+
+    def update_config(self, params):
+        return PfDynamicFunction.update_config(self, params)
+
+    def update_function(self, parser, state, params, code):
+        return PfDynamicFunction.update_function(self, parser, state,
+                                                 params, code)
+
+    def parse(self, parser, state):
+        args = []
+        indent = parser.get_current_indent(state)
+        for verbatim in self.args_vb[:-1]:
+            if verbatim:
+                args.append(parser.match_verbatim_scope(state))
+            else:
+                args.append(parser.match_parsable_scope(state))
+        if parser.document[state.pos] != '\n':
+            err_msg = lang.text('Parser.Error.Environment.ExpectedLineBreak')
+            raise ParserError({'row': state.row, 'col': state.col - 1,
+                               'file': parser.filename, 'path': parser.
+                               filepath, 'cause': err_msg})
+        state.shift_forward('\n')
+        fn_end = keywords.kw_dyn_environment_end % self.function_name
+        args.append(parser.match_to_next_occurence(state, '\n' + ' ' * indent +
+                    fn_end, sub_display_error=fn_end))
+        # call function
+        res = ''
+        if self.raw_func is not None:
+            res = str(self.raw_func.eval(*args))
+        elif self.py_func is not None:
+            res = str(self.py_func.eval(*args))
+        return res
     pass

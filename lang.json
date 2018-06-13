@@ -18,7 +18,12 @@
             "Parser.Error.Function.ConflictMode": "conflicting function type",
             "Parser.Error.Function.ForbidChar": "forbidden character in argument",
             "Parser.Error.Function.UnknownParam": "unknown parameter",
-            "Parser.Error.Environment.UnknownEnvironment": "environment name undeclared"
+            "Parser.Error.Function.ConflictCode": "redefinition of the same function",
+            "Parser.Error.Function.ParamMismatch": "parameters differ between function definitions",
+            "Parser.Error.Environment.UnknownEnvironment": "environment name undeclared",
+            "Parser.Error.Environment.TooFewArgs": "too few arguments taken",
+            "Parser.Error.Environment.LastMustVerbatim": "the last argument must be verbatim",
+            "Parser.Error.Environment.ExpectedLineBreak": "expected line break"
         },
         "zh-CN": {
         },

@@ -23,6 +23,9 @@ kw_def_function = '\\newcommand'
 kw_def_environment = '\\newenvironment'
 kw_environment_begin = '\\begin'
 kw_environment_end = '\\end'
+kw_dyn_function = '\\%s'
+kw_dyn_environment_begin = '\\begin{%s}'
+kw_dyn_environment_end = '\\end{%s}'
 
 # function related
 func_def_marker = ':'
