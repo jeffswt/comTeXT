@@ -11,19 +11,19 @@ language | en-US
 \namespace{std}{
     % newcommand and namespace must be indicated with indentation and not scope
     % markers.
-    \newcommand{myfunction: py(a, b, c), ctx->web}{
+    \newcommand{myfunction: py(a, b, c); ctx->web}{
         return a + b + c
     }
-    \newcommand{myfunction: raw(a, b, c), doc->doc}{
+    \newcommand{myfunction: raw(a, b, c); doc->doc}{
         #a#b#c
     }
-    \newcommand{(*,*): ctx(a), ctx->doc}{
-        \italic{a}
-    }  % not yet implemented, at least in a short time
-    \newenvironment{code: ctx(a, b), src->ctx, verbatim}{
+    % \newcommand{(*,*): raw(a); ctx->doc}{
+    %     \italic{#a}
+    % }  % not yet implemented, at least in a short time
+    \newenvironment{code: raw(a, *b); src->ctx}{
         \bold{code below}\br
-        #a
-        \italic{the language is #b}\br
+        #b
+        \italic{the language is #a}\br
         % here you should define a verbatim block, and make sure this part of
         % content would never be processed again
     }

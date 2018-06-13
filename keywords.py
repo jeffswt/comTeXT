@@ -26,15 +26,27 @@ kw_environment_end = '\\end'
 
 # function related
 func_def_marker = ':'
+func_def_split = ';'
 func_lang_py = 'py'
-func_lang_js = 'js'  # not yet implemented
 func_lang_raw = 'raw'
+func_lang = {
+    func_lang_py,
+    func_lang_raw,
+}
 func_param_left = '('
 func_param_right = ')'
 func_param_split = ','
+func_param_verbatim = '*'
+func_param_forbid_chars = '\n !"#$%&\'()*+,-./:;<=>?[\\]^_`{|}~'
 func_proc_src_after = 'ctx->ctx'
 func_proc_doc_before = 'ctx->doc'
 func_proc_doc_after = 'doc->doc'
 func_proc_web_before = 'ctx->web'
 func_proc_web_after = 'web->web'
-func_verbatim = 'verbatim'
+func_proc = {
+    func_proc_src_after,
+    func_proc_doc_before,
+    func_proc_doc_after,
+    func_proc_web_before,
+    func_proc_web_after,
+}
