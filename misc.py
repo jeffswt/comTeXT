@@ -1,4 +1,14 @@
 
+class DictObject:
+    def __init__(self, d={}, **kwargs):
+        for i in d:
+            setattr(self, i, d[i])
+        for i in kwargs:
+            setattr(self, i, kwargs[i])
+        return
+    pass
+
+
 def split_spaces(text):
     """Remove leading and trailing spaces and report the number of such spaces.
     When text is composed entirely of spaces, it is regarded as a string whole

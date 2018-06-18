@@ -21,6 +21,13 @@ class ParserState:
         # parser stack data
         self.target = ''  # 'web' or 'doc'
         self.depth = 0  # recursion depth
+        self.autobreak = misc.DictObject(
+            opened=False,
+            space=False,
+            breaks=False,
+            m_b=False,
+            m_e=False
+        )
         # file properties
         self.filepath = ''
         self.filename = ''
@@ -89,7 +96,7 @@ class Parser:
         @param state(ParserState)
         @returns indent(int)"""
         indent = 0
-        for i in range(state.pos, -1, -1):
+        for _ in range(state.pos, -1, -1):
             ch = self.document[state.pos]
             if ch == '\n':
                 break
@@ -98,6 +105,50 @@ class Parser:
             else:
                 indent = 0
         return indent
+
+    def process_auto_break(self, state, ch, nobreak=False):
+        """Auto break utility, returns inserted string (buffer)."""
+        ab = state.autobreak
+        if ch == ' ':
+            if not ab.opened:
+                return ''
+            if ab.breaks > 0:
+                return ''
+            ab.space = True
+            return ''
+        elif ch == '\n':
+            if not ab.opened:
+                return ''
+            if ab.space:
+                ab.space = False
+                ab.breaks = 0
+            ab.breaks += 1
+            return ''
+        # process normal case
+        if not ab.opened:
+            if nobreak:
+                return ch
+            ab.opened = True
+            return ab.m_b + ch
+        if ab.space:
+            ab.space = False
+            return ' ' + ch
+        if ab.breaks > 0:
+            if nobreak:
+                return ch
+            s = max(ab.breaks // 2, 1)
+            ab.breaks = 0
+            return (ab.m_e + ab.m_b) * s + ch
+        return ch
+
+    def close_auto_break(self, state):
+        ab = state.autobreak
+        if not ab.opened:
+            return ''
+        ab.opened = False
+        ab.space = False
+        ab.breaks = 0
+        return ab.m_e
 
     def match_function(self, state, begin):
         """Find longest match of function in document.
@@ -166,7 +217,10 @@ class Parser:
                                self.filename, 'path': self.filepath,
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
-        return self.parse_block(state, end_marker=keywords.scope_end)
+        state.depth += 1
+        res = self.parse_block(state, end_marker=keywords.scope_end)
+        state.depth -= 1
+        return res
 
     def extract_headers(self):
         """Extract headers and generate preprocessed document."""
@@ -236,6 +290,7 @@ class Parser:
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
         output = ''
+        print('parse block level: %d' % state.depth)
         while state.pos < len(self.document):
             ch = self.document[state.pos]
             # check if end marker occured, only if there is an end marker
@@ -253,15 +308,19 @@ class Parser:
             func_name = self.match_function(state, state.pos)
             # no function matches
             if func_name == '':
-                if ch != '\n':  # FIXME: should not ignore all line breaks
-                    output += ch
+                if state.depth == 0:
+                    output += self.process_auto_break(state, ch)
+                else:
+                    output += self.process_auto_break(state, ch, nobreak=True)
                 state.shift_forward(ch)
                 continue
             else:
                 state.shift_forward_mul(func_name)
             # parse function scope
             func = state.get_function_by_name(func_name)
+            state.depth += 1
             tmp = func.parse(self, state)
+            state.depth -= 1
             output += tmp
         # expected end marker but none found
         if end_marker is not None and state.pos == len(self.document) - 1:
@@ -282,6 +341,14 @@ class Parser:
         state.pos = 0
         state.target = self.target
         state.depth = 0
+        state.autobreak.m_b = {
+            'doc': keywords.autobrk_para_begin_doc,
+            'web': keywords.autobrk_para_begin_web,
+        }.get(self.target, '')
+        state.autobreak.m_e = {
+            'doc': keywords.autobrk_para_end_doc,
+            'web': keywords.autobrk_para_end_web,
+        }.get(self.target, '')
         state.filepath = self.filepath
         state.filename = self.filename
         # load initial functions
@@ -306,6 +373,7 @@ class Parser:
                            modules.PfEnvironmentEnd())
         # call recursive parser
         self.document = self.parse_block(state)
+        self.document += self.close_auto_break(state)
         return
 
     def parse(self):
@@ -315,12 +383,13 @@ class Parser:
             return self.document
         except ParserError as err:
             raise err
-            cause = err.cause()
-            lines = self.source.split('\n')
-            err_res = '%s:%d:%d: error: %s\n%s\n%s^' %\
-                      (cause['file'], cause['row'] + 1, cause['col'] + 1,
-                       cause['cause'], lines[cause['row']], ' ' * cause['col'])
-            print(err_res, end='')
+            # cause = err.cause()
+            # lines = self.source.split('\n')
+            # err_res = '%s:%d:%d: error: %s\n%s\n%s^' %\
+            #           (cause['file'], cause['row'] + 1, cause['col'] + 1,
+            #            cause['cause'], lines[cause['row']],
+            #            ' ' * cause['col'])
+            # print(err_res, end='')
         return ''
     pass
 

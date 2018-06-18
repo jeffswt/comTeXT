@@ -97,6 +97,7 @@ class PfLoadLibrary(ParserFunction):
 
 
 class PfDefFunction(ParserFunction):
+    @staticmethod
     def check_brackets(parser, state, text):
         err_msg = ''
         if not text.startswith(keywords.func_param_left):
@@ -123,6 +124,7 @@ class PfDefFunction(ParserFunction):
                                'cause': err_msg})
         return text.strip()
 
+    @staticmethod
     def parse_function_def(parser, state, text):
         # get function name
         func_name, *fdm_args = text.split(keywords.func_def_marker)
@@ -203,6 +205,7 @@ class PfDefFunction(ParserFunction):
             pass
         return out
 
+    @staticmethod
     def parse_function(parser, state):
         # get indentation
         indent = parser.get_current_indent(state)
@@ -381,7 +384,7 @@ class PfDynamicFunction(ParserFunction):
 class PfDynamicEnvironment(ParserFunction):
     def __init__(self):
         self.function_name = None
-        self.args_vb = None  # verbatim parse or not
+        self.args_vb = []  # verbatim parse or not
         self.mode = None
         self.py_func = None
         self.raw_func = None

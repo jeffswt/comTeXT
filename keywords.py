@@ -23,9 +23,10 @@ kw_def_function = '\\newcommand'
 kw_def_environment = '\\newenvironment'
 kw_environment_begin = '\\begin'
 kw_environment_end = '\\end'
-kw_dyn_function = '\\%s'
-kw_dyn_environment_begin = '\\begin{%s}'
-kw_dyn_environment_end = '\\end{%s}'
+kw_dyn_function = ch_escape + '%s'
+kw_dyn_environment_begin = kw_environment_begin + scope_begin + '%s' +\
+                           scope_end
+kw_dyn_environment_end = kw_environment_end + scope_begin + '%s' + scope_end
 
 # function related
 func_def_marker = ':'
@@ -58,3 +59,9 @@ func_proc = {
 jit_py_globals_classname = 'glob'
 jit_py_globals_initfunc = 'initvar'
 jit_raw_variable = '#%s'
+
+# auto break utility
+autobrk_para_begin_doc = '\\paragraph{}\n'
+autobrk_para_end_doc = '\n'
+autobrk_para_begin_web = '<p>'
+autobrk_para_end_web = '</p>\n'
