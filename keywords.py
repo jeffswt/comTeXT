@@ -54,6 +54,14 @@ func_proc = {
     func_proc_web_before,
     func_proc_web_after,
 }
+func_brk_ignore = 'noautobreak'
+func_brk_disabled = 'leavepara'
+func_brk_singlepara = 'singlepara'
+func_brk = {
+    func_brk_ignore,
+    func_brk_disabled,
+    func_brk_singlepara,
+}
 
 # jit function related
 jit_py_globals_classname = 'glob'

@@ -119,9 +119,7 @@ class Parser:
         elif ch == '\n':
             if not ab.opened:
                 return ''
-            if ab.space:
-                ab.space = False
-                ab.breaks = 0
+            ab.space = True
             ab.breaks += 1
             return ''
         # process normal case
@@ -132,11 +130,13 @@ class Parser:
             return ab.m_b + ch
         if ab.space:
             ab.space = False
-            return ' ' + ch
+            if ab.breaks < 2:
+                ab.breaks = 0
+                return ' ' + ch
         if ab.breaks > 0:
             if nobreak:
                 return ch
-            s = max(ab.breaks // 2, 1)
+            s = min(ab.breaks // 2, 1)  # no more than 1 paragraph break
             ab.breaks = 0
             return (ab.m_e + ab.m_b) * s + ch
         return ch
@@ -149,6 +149,13 @@ class Parser:
         ab.space = False
         ab.breaks = 0
         return ab.m_e
+
+    def manual_break(self, state):
+        print('manual break')
+        st = self.close_auto_break(state) +\
+               self.process_auto_break(state, '')
+        print(repr(st))
+        return st
 
     def match_function(self, state, begin):
         """Find longest match of function in document.
@@ -285,12 +292,11 @@ class Parser:
         self.document = '\n'.join(lines)
         return
 
-    def parse_block(self, state, end_marker=None):
+    def parse_block(self, state, end_marker=None, auto_break=False):
         """Convert document portion to a certain output format.
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
         output = ''
-        print('parse block level: %d' % state.depth)
         while state.pos < len(self.document):
             ch = self.document[state.pos]
             # check if end marker occured, only if there is an end marker
@@ -308,7 +314,7 @@ class Parser:
             func_name = self.match_function(state, state.pos)
             # no function matches
             if func_name == '':
-                if state.depth == 0:
+                if state.depth == 0 or auto_break:
                     output += self.process_auto_break(state, ch)
                 else:
                     output += self.process_auto_break(state, ch, nobreak=True)

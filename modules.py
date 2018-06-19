@@ -125,6 +125,70 @@ class PfDefFunction(ParserFunction):
         return text.strip()
 
     @staticmethod
+    def pfd_lang_args(parser, state, param, out):
+        found = False
+        # language and arguments
+        for l in keywords.func_lang:
+            if not param.startswith(l):
+                continue
+            found = True
+            # already has language (conflict)?
+            if out['lang'] != '':
+                err_msg = lang.text('Parser.Error.Function.'
+                                    'ConflictLanguage')
+                raise ParserError({'row': state.row, 'col': state.col - 1,
+                                   'file': parser.filename, 'path': parser.
+                                   filepath, 'cause': err_msg})
+            # check brackets
+            args = param[len(l):]
+            args = PfDefFunction.check_brackets(parser, state, args)
+            # parse arguments
+            args = list(i.strip() for i in args.split(keywords.
+                        func_param_split)) if args != '' else []
+            out['lang'] = l
+            for arg in args:
+                verbatim = False
+                if arg.startswith(keywords.func_param_verbatim):
+                    arg = arg[len(keywords.func_param_verbatim):].strip()
+                    verbatim = True
+                # check argument name validity
+                for ch in keywords.func_param_forbid_chars:
+                    if ch not in arg:
+                        continue
+                    err_msg = lang.text('Parser.Error.Function.ForbidChar')
+                    raise ParserError({'row': state.row, 'col': state.col - 1,
+                                       'file': parser.filename, 'path':
+                                       parser.filepath, 'cause': err_msg})
+                # valid and push in
+                out['args'].append({'name': arg, 'verbatim': verbatim})
+            pass
+        return found
+
+    @staticmethod
+    def pfd_function_mode(parser, state, param, out):
+        if param in keywords.func_proc:
+            if out['mode'] != '':
+                err_msg = lang.text('Parser.Error.Function.ConflictMode')
+                raise ParserError({'row': state.row, 'col': state.col - 1,
+                                   'file': parser.filename, 'path': parser.
+                                   filepath, 'cause': err_msg})
+            out['mode'] = param
+            return True
+        return False
+
+    @staticmethod
+    def pfd_auto_break(parser, state, param, out):
+        if param in keywords.func_brk:
+            if out['autobreak'] != '':
+                err_msg = lang.text('Parser.Error.Function.ConflictBreak')
+                raise ParserError({'row': state.row, 'col': state.col - 1,
+                                   'file': parser.filename, 'path': parser.
+                                   filepath, 'cause': err_msg})
+            out['autobreak'] = param
+            return True
+        return False
+
+    @staticmethod
     def parse_function_def(parser, state, text):
         # get function name
         func_name, *fdm_args = text.split(keywords.func_def_marker)
@@ -148,61 +212,28 @@ class PfDefFunction(ParserFunction):
             'name': func_name,
             'lang': '',
             'args': [],  # {'name': '...', 'verbatim': True}
-            'mode': ''
+            'mode': '',
+            'autobreak': '',
         }
         for param in params:
-            found = False
-            # language and arguments
-            for l in keywords.func_lang:
-                if not param.startswith(l):
-                    continue
-                found = True
-                # already has language (conflict)?
-                if out['lang'] != '':
-                    err_msg = lang.text('Parser.Error.Function.'
-                                        'ConflictLanguage')
-                    raise ParserError({'row': state.row, 'col': state.col - 1,
-                                       'file': parser.filename, 'path': parser.
-                                       filepath, 'cause': err_msg})
-                # check brackets
-                args = param[len(l):]
-                args = PfDefFunction.check_brackets(parser, state, args)
-                # parse arguments
-                args = list(i.strip() for i in args.split(keywords.
-                            func_param_split)) if args != '' else []
-                out['lang'] = l
-                for arg in args:
-                    verbatim = False
-                    if arg.startswith(keywords.func_param_verbatim):
-                        arg = arg[len(keywords.func_param_verbatim):].strip()
-                        verbatim = True
-                    # check argument name validity
-                    for ch in keywords.func_param_forbid_chars:
-                        if ch not in arg:
-                            continue
-                        err_msg = lang.text('Parser.Error.Function.ForbidChar')
-                        raise ParserError({'row': state.row, 'col': state.col -
-                                           1, 'file': parser.filename, 'path':
-                                           parser. filepath, 'cause': err_msg})
-                    # valid and push in
-                    out['args'].append({'name': arg, 'verbatim': verbatim})
-                pass
-            # parse function type
-            if param in keywords.func_proc:
-                if out['mode'] != '':
-                    err_msg = lang.text('Parser.Error.Function.ConflictMode')
-                    raise ParserError({'row': state.row, 'col': state.col - 1,
-                                       'file': parser.filename, 'path': parser.
-                                       filepath, 'cause': err_msg})
-                found = True
-                out['mode'] = param
+            if PfDefFunction.pfd_lang_args(parser, state, param, out):
+                continue
+            if PfDefFunction.pfd_function_mode(parser, state, param, out):
+                continue
+            if PfDefFunction.pfd_auto_break(parser, state, param, out):
+                continue
             # unknown parameter
-            if not found:
-                err_msg = lang.text('Parser.Error.Function.UnknownParam')
-                raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
-                                   filepath, 'cause': err_msg})
-            pass
+            err_msg = lang.text('Parser.Error.Function.UnknownParam')
+            raise ParserError({'row': state.row, 'col': state.col - 1,
+                               'file': parser.filename, 'path': parser.
+                               filepath, 'cause': err_msg})
+        # default values
+        if out['lang'] == '':
+            out['lang'] = keywords.func_lang_raw
+        if out['mode'] == '':
+            out['mode'] = keywords.func_proc_src_after
+        if out['autobreak'] == '':
+            out['autobreak'] = keywords.func_brk_ignore
         return out
 
     @staticmethod
@@ -322,6 +353,7 @@ class PfDynamicFunction(ParserFunction):
         self.mode = None
         self.py_func = None
         self.raw_func = None
+        self.autobreak = None
         return
 
     def update_config(self, params):
@@ -339,10 +371,13 @@ class PfDynamicFunction(ParserFunction):
                     return False
             if self.mode != params['mode']:
                 return False
+            if self.autobreak != params['autobreak']:
+                return False
             return True
         self.function_name = params['name']
         self.args_vb = list(i['verbatim'] for i in params['args'])
         self.mode = params['mode']
+        self.autobreak = params['autobreak']
         return True
 
     def update_function(self, parser, state, params, code):
@@ -365,6 +400,13 @@ class PfDynamicFunction(ParserFunction):
         return
 
     def parse(self, parser, state):
+        # process autobreak
+        res = ''
+        if self.autobreak == keywords.func_brk_disabled:
+            res += parser.close_auto_break(state)
+        elif self.autobreak == keywords.func_brk_singlepara:
+            res += parser.manual_break(state)
+        # load arguments
         args = []
         for verbatim in self.args_vb:
             if verbatim:
@@ -372,11 +414,13 @@ class PfDynamicFunction(ParserFunction):
             else:
                 args.append(parser.match_parsable_scope(state))
         # call function
-        res = ''
         if self.raw_func is not None:
-            res = str(self.raw_func.eval(*args))
+            res += str(self.raw_func.eval(*args))
         elif self.py_func is not None:
-            res = str(self.py_func.eval(*args))
+            res += str(self.py_func.eval(*args))
+        # process autobreak
+        if self.autobreak == keywords.func_brk_singlepara:
+            res += parser.close_auto_break(state)
         return res
     pass
 
