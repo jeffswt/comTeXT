@@ -106,7 +106,7 @@ class Parser:
                 indent = 0
         return indent
 
-    def process_auto_break(self, state, ch, nobreak=False):
+    def process_auto_break(self, state, ch, nobreak=False, dospace=False):
         """Auto break utility, returns inserted string (buffer)."""
         ab = state.autobreak
         if ch == ' ':
@@ -124,7 +124,7 @@ class Parser:
             return ''
         # process normal case
         if not ab.opened:
-            if nobreak:
+            if nobreak and not dospace:
                 return ch
             ab.opened = True
             return ab.m_b + ch
@@ -132,6 +132,8 @@ class Parser:
             ab.space = False
             if ab.breaks < 2:
                 ab.breaks = 0
+                return ' ' + ch
+            elif nobreak:
                 return ' ' + ch
         if ab.breaks > 0:
             if nobreak:
@@ -149,13 +151,6 @@ class Parser:
         ab.space = False
         ab.breaks = 0
         return ab.m_e
-
-    def manual_break(self, state):
-        print('manual break')
-        st = self.close_auto_break(state) +\
-               self.process_auto_break(state, '')
-        print(repr(st))
-        return st
 
     def match_function(self, state, begin):
         """Find longest match of function in document.
@@ -213,7 +208,7 @@ class Parser:
         state.shift_forward_mul(keywords.scope_begin)
         return self.match_to_next_occurence(state, keywords.scope_end)
 
-    def match_parsable_scope(self, state):
+    def match_parsable_scope(self, state, do_space=True):
         """Match {...} and return parsed contents.
         @param state(ParserState)"""
         m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
@@ -225,7 +220,8 @@ class Parser:
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
         state.depth += 1
-        res = self.parse_block(state, end_marker=keywords.scope_end)
+        res = self.parse_block(state, end_marker=keywords.scope_end,
+                               do_space=do_space)
         state.depth -= 1
         return res
 
@@ -292,7 +288,8 @@ class Parser:
         self.document = '\n'.join(lines)
         return
 
-    def parse_block(self, state, end_marker=None, auto_break=False):
+    def parse_block(self, state, end_marker=None, auto_break=False,
+                    do_space=False):
         """Convert document portion to a certain output format.
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
@@ -315,9 +312,11 @@ class Parser:
             # no function matches
             if func_name == '':
                 if state.depth == 0 or auto_break:
-                    output += self.process_auto_break(state, ch)
+                    output += self.process_auto_break(state, ch,
+                                                      dospace=do_space)
                 else:
-                    output += self.process_auto_break(state, ch, nobreak=True)
+                    output += self.process_auto_break(state, ch, nobreak=True,
+                                                      dospace=do_space)
                 state.shift_forward(ch)
                 continue
             else:
@@ -377,6 +376,8 @@ class Parser:
                            modules.PfEnvironmentBegin())
         state.add_function(keywords.kw_environment_end,
                            modules.PfEnvironmentEnd())
+        state.add_function(keywords.kw_paragraph,
+                           modules.PfParagraph())
         # call recursive parser
         self.document = self.parse_block(state)
         self.document += self.close_auto_break(state)

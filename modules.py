@@ -346,6 +346,18 @@ class PfEnvironmentEnd(ParserFunction):
     pass
 
 
+class PfParagraph(ParserFunction):
+    def parse(self, parser, state):
+        output = parser.close_auto_break(state)
+        tmp = parser.match_parsable_scope(state, do_space=True)
+        if not state.autobreak.opened:
+            output += state.autobreak.m_b + tmp + state.autobreak.m_e
+        else:
+            output += tmp + parser.close_auto_break(state)
+        return output
+    pass
+
+
 class PfDynamicFunction(ParserFunction):
     def __init__(self):
         self.function_name = None
@@ -403,9 +415,9 @@ class PfDynamicFunction(ParserFunction):
         # process autobreak
         res = ''
         if self.autobreak == keywords.func_brk_disabled:
-            res += parser.close_auto_break(state)
+            res = parser.close_auto_break(state)
         elif self.autobreak == keywords.func_brk_singlepara:
-            res += parser.manual_break(state)
+            res = parser.close_auto_break(state)
         # load arguments
         args = []
         for verbatim in self.args_vb:
@@ -414,13 +426,19 @@ class PfDynamicFunction(ParserFunction):
             else:
                 args.append(parser.match_parsable_scope(state))
         # call function
+        tmp = ''
         if self.raw_func is not None:
-            res += str(self.raw_func.eval(*args))
+            tmp = str(self.raw_func.eval(*args))
         elif self.py_func is not None:
-            res += str(self.py_func.eval(*args))
+            tmp = str(self.py_func.eval(*args))
         # process autobreak
         if self.autobreak == keywords.func_brk_singlepara:
-            res += parser.close_auto_break(state)
+            if not state.autobreak.opened:
+                res = res + state.autobreak.m_b + tmp + state.autobreak.m_e
+            else:
+                res = res + tmp + parser.close_auto_break(state)
+        else:
+            res = res + tmp
         return res
     pass
 

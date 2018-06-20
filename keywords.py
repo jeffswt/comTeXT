@@ -23,6 +23,8 @@ kw_def_function = '\\newcommand'
 kw_def_environment = '\\newenvironment'
 kw_environment_begin = '\\begin'
 kw_environment_end = '\\end'
+kw_paragraph = '\\paragraph'
+
 kw_dyn_function = ch_escape + '%s'
 kw_dyn_environment_begin = kw_environment_begin + scope_begin + '%s' +\
                            scope_end
