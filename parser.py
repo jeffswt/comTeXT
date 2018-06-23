@@ -21,6 +21,7 @@ class ParserState:
         # parser stack data
         self.target = ''  # 'web' or 'doc'
         self.depth = 0  # recursion depth
+        self.exec_count = 0  # executed function count
         self.autobreak = misc.DictObject(
             opened=False,
             space=False,
@@ -52,10 +53,11 @@ class ParserState:
             self.shift_forward(i)
         return
 
-    def shift_to_end(self, text):
+    def shift_to_end(self):
         """Shift to document end.
         @param text(str) entire document"""
         begin = self.pos
+        text = self.document
         for i in range(begin, len(text)):
             self.shift_forward(text[i])
         return
@@ -97,7 +99,7 @@ class Parser:
         @returns indent(int)"""
         indent = 0
         for _ in range(state.pos, -1, -1):
-            ch = self.document[state.pos]
+            ch = state.document[state.pos]
             if ch == '\n':
                 break
             elif ch == ' ':
@@ -160,8 +162,8 @@ class Parser:
         p = state.macros.root
         func = ''
         cur_str = ''
-        for i in range(begin, len(self.document)):
-            ch = self.document[i]
+        for i in range(begin, len(state.document)):
+            ch = state.document[i]
             if ch not in p.children:
                 break
             cur_str += ch
@@ -171,39 +173,40 @@ class Parser:
             pass
         return func
 
-    def match_next_keyword(self, begin, sub):
+    def match_next_keyword(self, state, begin, sub):
         """Match position of next occurence of sub starting from begin.
         @param begin(int)
         @param sub(str)
         @returns res(int) -1 if failure"""
-        return self.document.find(sub, begin)
+        return state.document.find(sub, begin)
 
     def match_to_next_occurence(self, state, sub, sub_display_error=None):
         """Match until next occurence of ...sub.
         @param state(ParserState)
         @returns res(str) inner contents"""
-        pos = self.match_next_keyword(state.pos, sub)
+        pos = self.match_next_keyword(state, state.pos, sub)
         if pos == -1:
             if sub_display_error is not None:
                 sub = sub_display_error
             err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') % sub
-            state.shift_to_end(self.document)
+            state.shift_to_end()
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               self.filename, 'path': self.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
-        res = misc.get_str_range(self.document, state.pos, pos - 1)
+        res = misc.get_str_range(state.document, state.pos, pos - 1)
         state.shift_forward_mul(res + sub)
         return res
 
     def match_verbatim_scope(self, state):
         """Match immediate {...} and return contents.
         @param state(ParserState)"""
-        m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
+        m_begin = self.match_next_keyword(state, state.pos,
+                                          keywords.scope_begin)
         if m_begin != state.pos:
             err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
                                 keywords.scope_begin
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               self.filename, 'path': self.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
         return self.match_to_next_occurence(state, keywords.scope_end)
@@ -211,12 +214,13 @@ class Parser:
     def match_parsable_scope(self, state, do_space=True):
         """Match {...} and return parsed contents.
         @param state(ParserState)"""
-        m_begin = self.match_next_keyword(state.pos, keywords.scope_begin)
+        m_begin = self.match_next_keyword(state, state.pos,
+                                          keywords.scope_begin)
         if m_begin != state.pos:
             err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker') %\
                                 keywords.scope_begin
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               self.filename, 'path': self.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
         state.depth += 1
@@ -289,19 +293,19 @@ class Parser:
         return
 
     def parse_block(self, state, end_marker=None, auto_break=False,
-                    do_space=False):
+                    do_space=True):
         """Convert document portion to a certain output format.
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
         output = ''
-        while state.pos < len(self.document):
-            ch = self.document[state.pos]
+        while state.pos < len(state.document):
+            ch = state.document[state.pos]
             # check if end marker occured, only if there is an end marker
             if end_marker is not None:
                 flag_end = True
-                for i in range(state.pos, min(len(self.document),
+                for i in range(state.pos, min(len(state.document),
                                state.pos + len(end_marker))):
-                    if self.document[i] != end_marker[i - state.pos]:
+                    if state.document[i] != end_marker[i - state.pos]:
                         flag_end = False
                         break
                 if flag_end is True:
@@ -326,67 +330,103 @@ class Parser:
             state.depth += 1
             tmp = func.parse(self, state)
             state.depth -= 1
+            state.exec_count += 1
             output += tmp
         # expected end marker but none found
-        if end_marker is not None and state.pos == len(self.document) - 1:
+        if end_marker is not None and state.pos == len(state.document) - 1:
             err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
                       end_marker
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               self.filename, 'path': self.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         # finally
         return output
 
-    def parse_document(self):
-        """Convert document to a certain output format."""
+    def parse_blob(self, state, blob):
+        """Completely eradicate all functions in scope."""
+        while True:
+            ns = self.create_parser_state(state.target, functions=state.macros,
+                                          document=blob)
+            bec = ns.exec_count
+            blob = self.parse_document(ns)
+            state.macros = ns.macros
+            if bec == ns.exec_count:
+                break
+        return blob
+
+    def create_parser_state(self, target, document=None, functions=None):
+        """Create initial parser state for parsing."""
         state = ParserState()
-        # initialize parser state
+        # initialize basic parameters
         state.row = 0
         state.col = 0
         state.pos = 0
-        state.target = self.target
+        state.target = target
         state.depth = 0
         state.autobreak.m_b = {
             'doc': keywords.autobrk_para_begin_doc,
             'web': keywords.autobrk_para_begin_web,
-        }.get(self.target, '')
+            'ctx': '',
+        }.get(state.target, '')
         state.autobreak.m_e = {
             'doc': keywords.autobrk_para_end_doc,
             'web': keywords.autobrk_para_end_web,
-        }.get(self.target, '')
+            'ctx': '',
+        }.get(state.target, '')
         state.filepath = self.filepath
         state.filename = self.filename
         # load initial functions
-        state.add_function(keywords.ch_escape, modules.PfChEscape())
-        state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
-        state.add_function(keywords.ch_unescape, modules.PfChUnescape())
-        state.add_function(keywords.ch_comment, modules.PfChComment())
-        state.add_function(keywords.ch_uncomment, modules.PfChUncomment())
-        state.add_function(keywords.scope_begin, modules.PfScopeBegin())
-        state.add_function(keywords.scope_end, modules.PfScopeEnd())
-        state.add_function(keywords.ch_scope_begin_esc,
-                           modules.PfChScopeBeginEsc())
-        state.add_function(keywords.ch_scope_end_esc,
-                           modules.PfChScopeEndEsc())
-        state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
-        state.add_function(keywords.kw_def_function, modules.PfDefFunction())
-        state.add_function(keywords.kw_def_environment,
-                           modules.PfDefEnvironment())
-        state.add_function(keywords.kw_environment_begin,
-                           modules.PfEnvironmentBegin())
-        state.add_function(keywords.kw_environment_end,
-                           modules.PfEnvironmentEnd())
-        state.add_function(keywords.kw_paragraph,
-                           modules.PfParagraph())
-        # call recursive parser
-        self.document = self.parse_block(state)
-        self.document += self.close_auto_break(state)
-        return
+        if functions is None:
+            state.add_function(keywords.ch_escape, modules.PfChEscape())
+            state.add_function(keywords.ch_whitespace,
+                               modules.PfChWhitespace())
+            state.add_function(keywords.ch_unescape, modules.PfChUnescape())
+            state.add_function(keywords.ch_comment, modules.PfChComment())
+            state.add_function(keywords.ch_uncomment, modules.PfChUncomment())
+            state.add_function(keywords.scope_begin, modules.PfScopeBegin())
+            state.add_function(keywords.scope_end, modules.PfScopeEnd())
+            state.add_function(keywords.ch_scope_begin_esc,
+                               modules.PfChScopeBeginEsc())
+            state.add_function(keywords.ch_scope_end_esc,
+                               modules.PfChScopeEndEsc())
+            state.add_function(keywords.kw_load_library,
+                               modules.PfLoadLibrary())
+            state.add_function(keywords.kw_def_function,
+                               modules.PfDefFunction())
+            state.add_function(keywords.kw_def_environment,
+                               modules.PfDefEnvironment())
+            state.add_function(keywords.kw_environment_begin,
+                               modules.PfEnvironmentBegin())
+            state.add_function(keywords.kw_environment_end,
+                               modules.PfEnvironmentEnd())
+            state.add_function(keywords.kw_paragraph,
+                               modules.PfParagraph())
+        else:
+            for i in functions:
+                state.add_function(i, functions[i])
+        # load document
+        if document is None:
+            state.document = self.document
+        else:
+            state.document = document
+        return state
+
+    def parse_document(self, state):
+        """Convert arbitrary document to a certain output format."""
+        # preprocess document
+        d = self.parse_block(state)
+        d += self.close_auto_break(state)
+        return state, d
 
     def parse(self):
+        """Parse this certain document."""
         try:
             self.extract_headers()
-            self.parse_document()
+            state = self.create_parser_state('ctx', document=self.document)
+            self.document = self.parse_document(state)
+            state = self.create_parser_state(self.target, self.document,
+                                             functions=state.macros)
+            self.document = self.parse_document(state)
             return self.document
         except ParserError as err:
             raise err

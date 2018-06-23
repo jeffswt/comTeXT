@@ -45,15 +45,11 @@ func_param_split = ','
 func_param_verbatim = '*'
 func_param_forbid_chars = '\n !"#$%&\'()*+,-./:;<=>?[\\]^_`{|}~'
 func_proc_src_after = 'ctx->ctx'
-func_proc_doc_before = 'ctx->doc'
-func_proc_doc_after = 'doc->doc'
-func_proc_web_before = 'ctx->web'
-func_proc_web_after = 'web->web'
+func_proc_doc_after = 'ctx->doc'
+func_proc_web_after = 'ctx->web'
 func_proc = {
     func_proc_src_after,
-    func_proc_doc_before,
     func_proc_doc_after,
-    func_proc_web_before,
     func_proc_web_after,
 }
 func_brk_ignore = 'noautobreak'

@@ -22,7 +22,7 @@ class PfChEscape(ParserFunction):
     def parse(self, parser, state):
         err_msg = lang.text('Parser.Error.Function.UnknownFunction')
         raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                           parser.filename, 'path': parser.filepath,
+                           state.filename, 'path': state.filepath,
                            'cause': err_msg})
     pass
 
@@ -44,7 +44,7 @@ class PfChComment(ParserFunction):
         kwpos = parser.match_next_keyword(state.pos, '\n')
         comment = ''
         for i in range(state.pos, kwpos + 1):
-            comment += parser.document[i]
+            comment += state.document[i]
         state.shift_forward_mul(comment)
         return ''
     pass
@@ -61,7 +61,7 @@ class PfScopeBegin(ParserFunction):
         err_msg = lang.text('Parser.Error.Scope.UnexpectedBeginMarker') %\
                             keywords.scope_begin
         raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                           parser.filename, 'path': parser.filepath,
+                           state.filename, 'path': state.filepath,
                            'cause': err_msg})
     pass
 
@@ -71,7 +71,7 @@ class PfScopeEnd(ParserFunction):
         err_msg = lang.text('Parser.Error.Scope.UnexpectedEndMarker') %\
                             keywords.scope_end
         raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                           parser.filename, 'path': parser.filepath,
+                           state.filename, 'path': state.filepath,
                            'cause': err_msg})
     pass
 
@@ -120,7 +120,7 @@ class PfDefFunction(ParserFunction):
                                 keywords.func_param_right
         if err_msg != '':
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         return text.strip()
 
@@ -137,7 +137,7 @@ class PfDefFunction(ParserFunction):
                 err_msg = lang.text('Parser.Error.Function.'
                                     'ConflictLanguage')
                 raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
+                                   'file': state.filename, 'path': state.
                                    filepath, 'cause': err_msg})
             # check brackets
             args = param[len(l):]
@@ -157,8 +157,8 @@ class PfDefFunction(ParserFunction):
                         continue
                     err_msg = lang.text('Parser.Error.Function.ForbidChar')
                     raise ParserError({'row': state.row, 'col': state.col - 1,
-                                       'file': parser.filename, 'path':
-                                       parser.filepath, 'cause': err_msg})
+                                       'file': state.filename, 'path':
+                                       state.filepath, 'cause': err_msg})
                 # valid and push in
                 out['args'].append({'name': arg, 'verbatim': verbatim})
             pass
@@ -170,7 +170,7 @@ class PfDefFunction(ParserFunction):
             if out['mode'] != '':
                 err_msg = lang.text('Parser.Error.Function.ConflictMode')
                 raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
+                                   'file': state.filename, 'path': state.
                                    filepath, 'cause': err_msg})
             out['mode'] = param
             return True
@@ -182,7 +182,7 @@ class PfDefFunction(ParserFunction):
             if out['autobreak'] != '':
                 err_msg = lang.text('Parser.Error.Function.ConflictBreak')
                 raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
+                                   'file': state.filename, 'path': state.
                                    filepath, 'cause': err_msg})
             out['autobreak'] = param
             return True
@@ -195,14 +195,14 @@ class PfDefFunction(ParserFunction):
         if len(fdm_args) == 0:
             err_msg = lang.text('Parser.Error.Function.MissingDefMarker')
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         if len(fdm_args) > 1:
             err_msg = lang.text('Parser.Error.Function.TooManyDefMarkers')
             raise ParserError({'row': state.row, 'col': state.col +
                                len(func_name) + len(fdm_args[0]) - 1 +
                                len(keywords.func_def_marker), 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func_name = func_name.strip()
         params = list(i.strip() for i in fdm_args[0].split(
@@ -225,7 +225,7 @@ class PfDefFunction(ParserFunction):
             # unknown parameter
             err_msg = lang.text('Parser.Error.Function.UnknownParam')
             raise ParserError({'row': state.row, 'col': state.col - 1,
-                               'file': parser.filename, 'path': parser.
+                               'file': state.filename, 'path': state.
                                filepath, 'cause': err_msg})
         # default values
         if out['lang'] == '':
@@ -247,12 +247,12 @@ class PfDefFunction(ParserFunction):
         if parser.match_to_next_occurence(state, '{') != '':
             err_msg = lang.text('Parser.Error.Scope.ExpectedBeginMarker')
             raise ParserError({'row': state.row, 'col': state.col, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
-        if parser.document[state.pos] != '\n':
+        if state.document[state.pos] != '\n':
             err_msg = lang.text('Parser.Error.Function.ExpectedLineBreak')
             raise ParserError({'row': state.row, 'col': state.col + 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         content = parser.match_to_next_occurence(state, '\n' + ' ' * indent +
                                                  keywords.scope_end)
@@ -264,7 +264,7 @@ class PfDefFunction(ParserFunction):
         if min_indent <= indent:
             err_msg = lang.text('Parser.Error.Scope.Outdented') % indent
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         code = '\n'.join(i[min_indent:] for i in lines)
         return params, code
@@ -283,7 +283,7 @@ class PfDefFunction(ParserFunction):
         if not func.update_config(params):
             err_msg = lang.text('Parser.Error.Function.ParamMismatch')
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func.update_function(parser, state, params, code)
         if is_new:
@@ -307,18 +307,18 @@ class PfDefEnvironment(ParserFunction):
         if len(params['args']) == 0:
             err_msg = lang.text('Parser.Error.Environment.TooFewArgs')
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         if not params['args'][-1]['verbatim']:
             err_msg = lang.text('Parser.Error.Environment.LastMustVerbatim')
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         # update parameters and code
         if not func.update_config(params):
             err_msg = lang.text('Parser.Error.Function.ParamMismatch')
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                               parser.filename, 'path': parser.filepath,
+                               state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func.update_function(parser, state, params, code)
         if is_new:
@@ -331,7 +331,7 @@ class PfEnvironmentBegin(ParserFunction):
     def parse(self, parser, state):
         err_msg = lang.text('Parser.Error.Environment.UnknownEnvironment')
         raise ParserError({'row': state.row, 'col': state.col, 'file':
-                           parser.filename, 'path': parser.filepath,
+                           state.filename, 'path': state.filepath,
                            'cause': err_msg})
     pass
 
@@ -341,7 +341,7 @@ class PfEnvironmentEnd(ParserFunction):
         err_msg = lang.text('Parser.Error.Scope.UnexpectedEndMarker') %\
                             keywords.kw_environment_end
         raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
-                           parser.filename, 'path': parser.filepath,
+                           state.filename, 'path': state.filepath,
                            'cause': err_msg})
     pass
 
@@ -399,14 +399,14 @@ class PfDynamicFunction(ParserFunction):
             if self.py_func is not None:
                 err_msg = lang.text('Parser.Error.Function.ConflictCode')
                 raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
+                                   'file': state.filename, 'path': state.
                                    filepath, 'cause': err_msg})
             self.py_func = jitfunction.JitFunctionPy(fname, args, code)
         elif params['lang'] == keywords.func_lang_raw:
             if self.raw_func is not None:
                 err_msg = lang.text('Parser.Error.Function.ConflictCode')
                 raise ParserError({'row': state.row, 'col': state.col - 1,
-                                   'file': parser.filename, 'path': parser.
+                                   'file': state.filename, 'path': state.
                                    filepath, 'cause': err_msg})
             self.raw_func = jitfunction.JitFunctionRaw(fname, args, code)
         return
@@ -425,12 +425,18 @@ class PfDynamicFunction(ParserFunction):
                 args.append(parser.match_verbatim_scope(state))
             else:
                 args.append(parser.match_parsable_scope(state))
-        # call function
         tmp = ''
-        if self.raw_func is not None:
-            tmp = str(self.raw_func.eval(*args))
-        elif self.py_func is not None:
-            tmp = str(self.py_func.eval(*args))
+        # call function
+        if (state.target, self.mode) in {
+                ('ctx', keywords.func_proc_src_after),
+                ('doc', keywords.func_proc_doc_after),
+                ('web', keywords.func_proc_web_after)}:
+            # mode is correct
+            if self.raw_func is not None:
+                tmp = str(self.raw_func.eval(*args))
+            elif self.py_func is not None:
+                tmp = str(self.py_func.eval(*args))
+            tmp = parser.parse_blob(state, tmp)
         # process autobreak
         if self.autobreak == keywords.func_brk_singlepara:
             if not state.autobreak.opened:
@@ -467,10 +473,10 @@ class PfDynamicEnvironment(ParserFunction):
                 args.append(parser.match_verbatim_scope(state))
             else:
                 args.append(parser.match_parsable_scope(state))
-        if parser.document[state.pos] != '\n':
+        if state.document[state.pos] != '\n':
             err_msg = lang.text('Parser.Error.Environment.ExpectedLineBreak')
             raise ParserError({'row': state.row, 'col': state.col - 1,
-                               'file': parser.filename, 'path': parser.
+                               'file': state.filename, 'path': state.
                                filepath, 'cause': err_msg})
         state.shift_forward('\n')
         fn_end = keywords.kw_dyn_environment_end % self.function_name
