@@ -3,13 +3,13 @@ import os
 
 import keywords
 import modules
-import parser
+import kernel
 
 from error import ParserError
 
 
 def make_default_functions():
-    state = parser.ParserState()
+    state = kernel.ParserState()
     state.add_function(keywords.ch_escape, modules.PfChEscape())
     state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
     state.add_function(keywords.ch_unescape, modules.PfChUnescape())
@@ -34,7 +34,7 @@ def parse_file(path, target):
     fhandle = open('test.tex', 'r', encoding=keywords.ctx_file_encoding)
     fcontent = fhandle.read()
     fhandle.close()
-    pobj = parser.Parser(filepath=os.path.dirname(path),
+    pobj = kernel.Parser(filepath=os.path.dirname(path),
                          filename=os.path.basename(path),
                          document=fcontent,
                          target=target,

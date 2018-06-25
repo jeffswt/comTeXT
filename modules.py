@@ -5,7 +5,7 @@ import jitfunction
 import keywords
 import lang
 import misc
-import parser
+import kernel
 
 from error import ParserError
 
@@ -119,13 +119,13 @@ class PfLoadLibrary(ParserFunction):
         fhandle = open(absp, 'r', encoding=keywords.ctx_file_encoding)
         fcontent = fhandle.read()
         fhandle.close()
-        subp = parser.Parser(filepath=fpath,
+        subp = kernel.Parser(filepath=fpath,
                              filename=fname,
                              document=fcontent,
                              target=parser_i.target,
                              include_path=[fpath] + parser_i.include_path)
         subp.parse(functions=state.macros)
-        state.macros = subp.state
+        state.macros = subp.state.macros
         return ''
     pass
 
