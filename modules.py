@@ -20,6 +20,7 @@ class ParserFunction:
 
 class PfChEscape(ParserFunction):
     def parse(self, parser, state):
+        print(list(state.macros))
         err_msg = lang.text('Parser.Error.Function.UnknownFunction')
         raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
                            state.filename, 'path': state.filepath,
@@ -269,6 +270,14 @@ class PfDefFunction(ParserFunction):
         code = '\n'.join(i[min_indent:] for i in lines)
         return params, code
 
+    @staticmethod
+    def available_modes(parser):
+        modes = {keywords.func_proc_src_after,
+                 {'doc': keywords.func_proc_doc_after,
+                  'web': keywords.func_proc_web_after
+                  }.get(parser.target, '')}
+        return modes
+
     def parse(self, parser, state):
         params, code = PfDefFunction.parse_function(parser, state)
         # retrieve dynamic function
@@ -286,7 +295,7 @@ class PfDefFunction(ParserFunction):
                                state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func.update_function(parser, state, params, code)
-        if is_new and params['mode'] in {'ctx', parser.target}:
+        if is_new and params['mode'] in PfDefFunction.available_modes(parser):
             state.add_function(fname, func)
         return ''
     pass
@@ -321,7 +330,7 @@ class PfDefEnvironment(ParserFunction):
                                state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func.update_function(parser, state, params, code)
-        if is_new:
+        if is_new and params['mode'] in PfDefFunction.available_modes(parser):
             state.add_function(fname, func)
         return ''
     pass
@@ -411,12 +420,13 @@ class PfDynamicFunction(ParserFunction):
             self.raw_func = jitfunction.JitFunctionRaw(fname, args, code)
         return
 
-    def parse(self, parser, state):
-        # check whether to execute
-        do_exec = (state.target, self.mode) in {
+    def check_do_exec(self, state):
+        return (state.target, self.mode) in {
                 ('ctx', keywords.func_proc_src_after),
                 ('doc', keywords.func_proc_doc_after),
                 ('web', keywords.func_proc_web_after)}
+
+    def process_break(self, parser, state):
         # process autobreak
         res = parser.flush_auto_break(state)
         if state.autobreak.enabled:
@@ -424,6 +434,23 @@ class PfDynamicFunction(ParserFunction):
                 res += parser.open_auto_break(state)
             elif self.autobreak == keywords.func_brk_leaveblk:
                 res += parser.close_auto_break(state)
+        return res
+
+    def call_function(self, parser, state, do_exec, args, res):
+        tmp = ''
+        if do_exec:
+            if self.raw_func is not None:
+                tmp = str(self.raw_func.eval(*args))
+            elif self.py_func is not None:
+                tmp = str(self.py_func.eval(*args))
+            if state.target == 'ctx':
+                tmp = parser.parse_blob(state, tmp)
+            res += tmp
+        return res
+
+    def parse(self, parser, state):
+        do_exec = self.check_do_exec(state)
+        res = self.process_break(parser, state)
         # load arguments
         prev_abs = state.autobreak.enabled
         state.autobreak.enabled = False
@@ -433,18 +460,10 @@ class PfDynamicFunction(ParserFunction):
                 args.append(parser.match_verbatim_scope(state))
             else:
                 args.append(parser.match_parsable_scope(state))
-        tmp = ''
         state.autobreak.enabled = prev_abs
         # call function
-        if do_exec:
-            if self.raw_func is not None:
-                tmp = str(self.raw_func.eval(*args))
-            elif self.py_func is not None:
-                tmp = str(self.py_func.eval(*args))
-            if state.target == 'ctx':
-                tmp = parser.parse_blob(state, tmp)
-            res += tmp
-        # however, if not executing...
+        res = self.call_function(parser, state, do_exec, args, res)
+        # execute this if not executing
         if not do_exec:
             res += keywords.kw_dyn_function % self.function_name + ''.join(
                    (keywords.scope_begin + i + keywords.scope_end)
@@ -470,6 +489,11 @@ class PfDynamicEnvironment(ParserFunction):
                                                  params, code)
 
     def parse(self, parser, state):
+        do_exec = PfDynamicFunction.check_do_exec(self, state)
+        res = PfDynamicFunction.process_break(self, parser, state)
+        # load arguments
+        prev_abs = state.autobreak.enabled
+        state.autobreak.enabled = False
         args = []
         indent = parser.get_current_indent(state)
         for verbatim in self.args_vb[:-1]:
@@ -486,11 +510,18 @@ class PfDynamicEnvironment(ParserFunction):
         fn_end = keywords.kw_dyn_environment_end % self.function_name
         args.append(parser.match_to_next_occurence(state, '\n' + ' ' * indent +
                     fn_end, sub_display_error=fn_end))
+        state.autobreak.enabled = prev_abs
+        # process indentation on last one
+        has_indent = args[-1]
+        args[-1] = '\n'.join(i[indent:] for i in has_indent.split('\n'))
         # call function
-        res = ''
-        if self.raw_func is not None:
-            res = str(self.raw_func.eval(*args))
-        elif self.py_func is not None:
-            res = str(self.py_func.eval(*args))
+        res = PfDynamicFunction.call_function(self, parser, state,
+                                              do_exec, args, res)
+        # execute this if not executing
+        if not do_exec:
+            res += keywords.kw_dyn_environment_begin % self.function_name
+            res += ''.join((keywords.scope_begin + i + keywords.scope_end) for
+                           i in args[:-1])
+            res += '\n' + args[-1] + '\n' + fn_end
         return res
     pass

@@ -100,7 +100,7 @@ class Parser:
         @returns indent(int)"""
         indent = 0
         for _ in range(state.pos, -1, -1):
-            ch = state.document[state.pos]
+            ch = state.document[_]
             if ch == '\n':
                 break
             elif ch == ' ':
@@ -454,7 +454,8 @@ class Parser:
             self.extract_headers()
             state = self.create_parser_state('ctx', document=self.document)
             self.document = self.parse_document(state)
-            state = self.create_parser_state(self.target, self.document,
+            state = self.create_parser_state(target=self.target,
+                                             document=self.document,
                                              functions=state.macros)
             self.document = self.parse_document(state)
             return self.document
