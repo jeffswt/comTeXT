@@ -41,7 +41,7 @@ class PfChUnescape(ParserFunction):
 
 class PfChComment(ParserFunction):
     def parse(self, parser, state):
-        kwpos = parser.match_next_keyword(state.pos, '\n')
+        kwpos = parser.match_next_keyword(state, state.pos, '\n')
         comment = ''
         for i in range(state.pos, kwpos + 1):
             comment += state.document[i]
@@ -233,7 +233,7 @@ class PfDefFunction(ParserFunction):
         if out['mode'] == '':
             out['mode'] = keywords.func_proc_src_after
         if out['autobreak'] == '':
-            out['autobreak'] = keywords.func_brk_ignore
+            out['autobreak'] = keywords.func_brk_wrapinblk
         return out
 
     @staticmethod
@@ -348,12 +348,12 @@ class PfEnvironmentEnd(ParserFunction):
 
 class PfParagraph(ParserFunction):
     def parse(self, parser, state):
-        output = parser.close_auto_break(state)
-        tmp = parser.match_parsable_scope(state, do_space=True)
-        if not state.autobreak.opened:
-            output += state.autobreak.m_b + tmp + state.autobreak.m_e
-        else:
-            output += tmp + parser.close_auto_break(state)
+        output = parser.open_auto_break(state, reopen=True)
+        prev_abs = state.autobreak.enabled
+        state.autobreak.enabled = False
+        tmp = parser.match_parsable_scope(state)
+        state.autobreak.mode = prev_abs
+        output += tmp + parser.close_auto_break(state)
         return output
     pass
 
@@ -412,13 +412,22 @@ class PfDynamicFunction(ParserFunction):
         return
 
     def parse(self, parser, state):
+        # check whether to execute
+        # FIXME: doc/web in one function name situation
+        do_exec = (state.target, self.mode) in {
+                ('ctx', keywords.func_proc_src_after),
+                ('doc', keywords.func_proc_doc_after),
+                ('web', keywords.func_proc_web_after)}
         # process autobreak
-        res = ''
-        if self.autobreak == keywords.func_brk_disabled:
-            res = parser.close_auto_break(state)
-        elif self.autobreak == keywords.func_brk_singlepara:
-            res = parser.close_auto_break(state)
+        res = parser.flush_auto_break(state)
+        if state.autobreak.enabled:
+            if self.autobreak == keywords.func_brk_wrapinblk:
+                res += parser.open_auto_break(state)
+            elif self.autobreak == keywords.func_brk_leaveblk:
+                res += parser.close_auto_break(state)
         # load arguments
+        prev_abs = state.autobreak.enabled
+        state.autobreak.enabled = False
         args = []
         for verbatim in self.args_vb:
             if verbatim:
@@ -426,25 +435,21 @@ class PfDynamicFunction(ParserFunction):
             else:
                 args.append(parser.match_parsable_scope(state))
         tmp = ''
+        state.autobreak.enabled = prev_abs
         # call function
-        if (state.target, self.mode) in {
-                ('ctx', keywords.func_proc_src_after),
-                ('doc', keywords.func_proc_doc_after),
-                ('web', keywords.func_proc_web_after)}:
-            # mode is correct
+        if do_exec:
             if self.raw_func is not None:
                 tmp = str(self.raw_func.eval(*args))
             elif self.py_func is not None:
                 tmp = str(self.py_func.eval(*args))
-            tmp = parser.parse_blob(state, tmp)
-        # process autobreak
-        if self.autobreak == keywords.func_brk_singlepara:
-            if not state.autobreak.opened:
-                res = res + state.autobreak.m_b + tmp + state.autobreak.m_e
-            else:
-                res = res + tmp + parser.close_auto_break(state)
-        else:
-            res = res + tmp
+            if state.target == 'ctx':
+                tmp = parser.parse_blob(state, tmp)
+            res += tmp
+        # however, if not executing...
+        if not do_exec:
+            res += keywords.kw_dyn_function % self.function_name + ''.join(
+                   (keywords.scope_begin + i + keywords.scope_end)
+                   for i in args)
         return res
     pass
 

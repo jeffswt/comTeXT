@@ -27,7 +27,8 @@ class ParserState:
             space=False,
             breaks=False,
             m_b=False,
-            m_e=False
+            m_e=False,
+            enabled=True
         )
         # file properties
         self.filepath = ''
@@ -108,7 +109,7 @@ class Parser:
                 indent = 0
         return indent
 
-    def process_auto_break(self, state, ch, nobreak=False, dospace=False):
+    def process_auto_break(self, state, ch):
         """Auto break utility, returns inserted string (buffer)."""
         ab = state.autobreak
         if ch == ' ':
@@ -126,7 +127,7 @@ class Parser:
             return ''
         # process normal case
         if not ab.opened:
-            if nobreak and not dospace:
+            if not ab.enabled:
                 return ch
             ab.opened = True
             return ab.m_b + ch
@@ -135,15 +136,24 @@ class Parser:
             if ab.breaks < 2:
                 ab.breaks = 0
                 return ' ' + ch
-            elif nobreak:
+            elif not ab.enabled:
                 return ' ' + ch
         if ab.breaks > 0:
-            if nobreak:
+            if not ab.enabled:
                 return ch
             s = min(ab.breaks // 2, 1)  # no more than 1 paragraph break
             ab.breaks = 0
             return (ab.m_e + ab.m_b) * s + ch
         return ch
+
+    def open_auto_break(self, state, reopen=False):
+        if state.autobreak.opened:
+            return ''
+        text = ''
+        if reopen:
+            text += self.close_auto_break(state)
+        text += self.process_auto_break(state, '')
+        return text
 
     def close_auto_break(self, state):
         ab = state.autobreak
@@ -153,6 +163,23 @@ class Parser:
         ab.space = False
         ab.breaks = 0
         return ab.m_e
+
+    def flush_auto_break(self, state):
+        ab = state.autobreak
+        if not ab.opened:
+            return ''
+        if ab.breaks >= 2 and ab.enabled:
+            ab.opened = False
+            ab.space = False
+            ab.breaks = 0
+            return ab.m_e
+        if ab.space or ab.breaks > 0:
+            ab.space = False
+            ab.breaks = 0
+            return ' '
+        ab.space = False
+        ab.breaks = 0
+        return ''
 
     def match_function(self, state, begin):
         """Find longest match of function in document.
@@ -211,7 +238,7 @@ class Parser:
         state.shift_forward_mul(keywords.scope_begin)
         return self.match_to_next_occurence(state, keywords.scope_end)
 
-    def match_parsable_scope(self, state, do_space=True):
+    def match_parsable_scope(self, state):
         """Match {...} and return parsed contents.
         @param state(ParserState)"""
         m_begin = self.match_next_keyword(state, state.pos,
@@ -224,8 +251,7 @@ class Parser:
                                'cause': err_msg})
         state.shift_forward_mul(keywords.scope_begin)
         state.depth += 1
-        res = self.parse_block(state, end_marker=keywords.scope_end,
-                               do_space=do_space)
+        res = self.parse_block(state, end_marker=keywords.scope_end)
         state.depth -= 1
         return res
 
@@ -292,12 +318,12 @@ class Parser:
         self.document = '\n'.join(lines)
         return
 
-    def parse_block(self, state, end_marker=None, auto_break=False,
-                    do_space=True):
+    def parse_block(self, state, end_marker=None):
         """Convert document portion to a certain output format.
         @param state(ParserState) current state
         @param end_marker(str/None) terminates until this is found."""
         output = ''
+        has_end_marker = False
         while state.pos < len(state.document):
             ch = state.document[state.pos]
             # check if end marker occured, only if there is an end marker
@@ -310,17 +336,13 @@ class Parser:
                         break
                 if flag_end is True:
                     state.shift_forward_mul(end_marker)
+                    has_end_marker = True
                     break
             # match function
             func_name = self.match_function(state, state.pos)
             # no function matches
             if func_name == '':
-                if state.depth == 0 or auto_break:
-                    output += self.process_auto_break(state, ch,
-                                                      dospace=do_space)
-                else:
-                    output += self.process_auto_break(state, ch, nobreak=True,
-                                                      dospace=do_space)
+                output += self.process_auto_break(state, ch)
                 state.shift_forward(ch)
                 continue
             else:
@@ -333,7 +355,7 @@ class Parser:
             state.exec_count += 1
             output += tmp
         # expected end marker but none found
-        if end_marker is not None and state.pos == len(state.document) - 1:
+        if end_marker is not None and not has_end_marker:
             err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') %\
                       end_marker
             raise ParserError({'row': state.row, 'col': state.col, 'file':
@@ -347,14 +369,17 @@ class Parser:
         while True:
             ns = self.create_parser_state(state.target, functions=state.macros,
                                           document=blob)
-            bec = ns.exec_count
+            before = ns.exec_count
             blob = self.parse_document(ns)
+            after = ns.exec_count
             state.macros = ns.macros
-            if bec == ns.exec_count:
+            state.exec_count += ns.exec_count
+            if before == after:
                 break
         return blob
 
-    def create_parser_state(self, target, document=None, functions=None):
+    def create_parser_state(self, target, document=None, functions=None,
+                            break_enabled=None):
         """Create initial parser state for parsing."""
         state = ParserState()
         # initialize basic parameters
@@ -371,7 +396,7 @@ class Parser:
         state.autobreak.m_e = {
             'doc': keywords.autobrk_para_end_doc,
             'web': keywords.autobrk_para_end_web,
-            'ctx': '',
+            'ctx': '\n\n',
         }.get(state.target, '')
         state.filepath = self.filepath
         state.filename = self.filename
@@ -409,6 +434,11 @@ class Parser:
             state.document = self.document
         else:
             state.document = document
+        # set break state
+        if break_enabled is None:
+            state.autobreak.break_enabled = True
+        else:
+            state.autobreak.break_enabled = break_enabled
         return state
 
     def parse_document(self, state):
@@ -416,7 +446,7 @@ class Parser:
         # preprocess document
         d = self.parse_block(state)
         d += self.close_auto_break(state)
-        return state, d
+        return d
 
     def parse(self):
         """Parse this certain document."""

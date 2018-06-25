@@ -52,13 +52,11 @@ func_proc = {
     func_proc_doc_after,
     func_proc_web_after,
 }
-func_brk_ignore = 'noautobreak'
-func_brk_disabled = 'leavepara'
-func_brk_singlepara = 'singlepara'
+func_brk_wrapinblk = 'wrapinblk'  # contained in paragraph
+func_brk_leaveblk = 'leaveblk'  # leave paragraph
 func_brk = {
-    func_brk_ignore,
-    func_brk_disabled,
-    func_brk_singlepara,
+    func_brk_wrapinblk,
+    func_brk_leaveblk,
 }
 
 # jit function related
@@ -67,7 +65,7 @@ jit_py_globals_initfunc = 'initvar'
 jit_raw_variable = '#%s'
 
 # auto break utility
-autobrk_para_begin_doc = '\\paragraph{}\n'
+autobrk_para_begin_doc = '\n\\paragraph{}\n'
 autobrk_para_end_doc = '\n'
-autobrk_para_begin_web = '<p>'
+autobrk_para_begin_web = '\n<p>'
 autobrk_para_end_web = '</p>\n'
