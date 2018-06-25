@@ -1,4 +1,15 @@
 
+# basic specifications
+ctx_file_extensions = [
+    'ctx',
+    'tex',
+    'sty',
+]
+ctx_file_encoding = 'utf-8'
+ctx_include_path = [
+    '.',
+]
+
 # header markers
 header_marker_begin = '---'
 header_entry_separator = '|'

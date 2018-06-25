@@ -24,7 +24,8 @@
             "Parser.Error.Environment.UnknownEnvironment": "no suitable environment found",
             "Parser.Error.Environment.TooFewArgs": "too few arguments taken",
             "Parser.Error.Environment.LastMustVerbatim": "the last argument must be verbatim",
-            "Parser.Error.Environment.ExpectedLineBreak": "expected line break"
+            "Parser.Error.Environment.ExpectedLineBreak": "expected line break",
+            "Parser.Error.Library.FileNotFound": "described library does not exist"
         },
         "zh-CN": {
         },

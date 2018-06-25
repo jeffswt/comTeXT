@@ -5,7 +5,6 @@ import keywords
 import lang
 import misc
 import trie
-import modules
 
 from error import ParserError
 
@@ -25,7 +24,7 @@ class ParserState:
         self.autobreak = misc.DictObject(
             opened=False,
             space=False,
-            breaks=False,
+            breaks=0,
             m_b=False,
             m_e=False,
             enabled=True
@@ -85,11 +84,13 @@ class ParserState:
 class Parser:
     """Document parser class"""
 
-    def __init__(self, filepath, filename, document, target):
+    def __init__(self, filepath, filename, document, target, include_path=[]):
         self.filepath = filepath
         self.filename = filename
+        self.include_path = include_path
         self.headers = {}
         self.document = document
+        self.state = ParserState()
         self.source = document  # original, unmodified document
         self.target = target
         return
@@ -367,8 +368,9 @@ class Parser:
     def parse_blob(self, state, blob):
         """Completely eradicate all functions in scope."""
         while True:
-            ns = self.create_parser_state(state.target, functions=state.macros,
+            ns = self.create_parser_state(state.target, state.macros,
                                           document=blob)
+            ns.autobreak.enabled = False
             before = ns.exec_count
             blob = self.parse_document(ns)
             after = ns.exec_count
@@ -378,7 +380,7 @@ class Parser:
                 break
         return blob
 
-    def create_parser_state(self, target, document=None, functions=None,
+    def create_parser_state(self, target, functions, document=None,
                             break_enabled=None):
         """Create initial parser state for parsing."""
         state = ParserState()
@@ -401,34 +403,8 @@ class Parser:
         state.filepath = self.filepath
         state.filename = self.filename
         # load initial functions
-        if functions is None:
-            state.add_function(keywords.ch_escape, modules.PfChEscape())
-            state.add_function(keywords.ch_whitespace,
-                               modules.PfChWhitespace())
-            state.add_function(keywords.ch_unescape, modules.PfChUnescape())
-            state.add_function(keywords.ch_comment, modules.PfChComment())
-            state.add_function(keywords.ch_uncomment, modules.PfChUncomment())
-            state.add_function(keywords.scope_begin, modules.PfScopeBegin())
-            state.add_function(keywords.scope_end, modules.PfScopeEnd())
-            state.add_function(keywords.ch_scope_begin_esc,
-                               modules.PfChScopeBeginEsc())
-            state.add_function(keywords.ch_scope_end_esc,
-                               modules.PfChScopeEndEsc())
-            state.add_function(keywords.kw_load_library,
-                               modules.PfLoadLibrary())
-            state.add_function(keywords.kw_def_function,
-                               modules.PfDefFunction())
-            state.add_function(keywords.kw_def_environment,
-                               modules.PfDefEnvironment())
-            state.add_function(keywords.kw_environment_begin,
-                               modules.PfEnvironmentBegin())
-            state.add_function(keywords.kw_environment_end,
-                               modules.PfEnvironmentEnd())
-            state.add_function(keywords.kw_paragraph,
-                               modules.PfParagraph())
-        else:
-            for i in functions:
-                state.add_function(i, functions[i])
+        for i in functions:
+            state.add_function(i, functions[i])
         # load document
         if document is None:
             state.document = self.document
@@ -448,35 +424,18 @@ class Parser:
         d += self.close_auto_break(state)
         return d
 
-    def parse(self):
+    def parse(self, functions):
         """Parse this certain document."""
-        try:
-            self.extract_headers()
-            state = self.create_parser_state('ctx', document=self.document)
-            self.document = self.parse_document(state)
+        self.extract_headers()
+        state = self.create_parser_state(target='ctx',
+                                         functions=functions,
+                                         document=self.document)
+        self.document = self.parse_document(state)
+        if self.target != 'ctx':
             state = self.create_parser_state(target=self.target,
-                                             document=self.document,
-                                             functions=state.macros)
+                                             functions=state.macros,
+                                             document=self.document)
             self.document = self.parse_document(state)
-            return self.document
-        except ParserError as err:
-            raise err
-            # cause = err.cause()
-            # lines = self.source.split('\n')
-            # err_res = '%s:%d:%d: error: %s\n%s\n%s^' %\
-            #           (cause['file'], cause['row'] + 1, cause['col'] + 1,
-            #            cause['cause'], lines[cause['row']],
-            #            ' ' * cause['col'])
-            # print(err_res, end='')
-        return ''
+        self.state = state
+        return self.document
     pass
-
-
-f = open('test.tex', 'r', encoding='utf8')
-s = f.read()
-f.close()
-
-p = Parser('.', 'test.tex', s, 'web')
-r = p.parse()
-
-print(r)

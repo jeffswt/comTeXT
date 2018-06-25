@@ -1,8 +1,11 @@
 
+import os
+
 import jitfunction
 import keywords
 import lang
 import misc
+import parser
 
 from error import ParserError
 
@@ -90,10 +93,40 @@ class PfChScopeEndEsc(ParserFunction):
 
 
 class PfLoadLibrary(ParserFunction):
-    def parse(self, parser, state):
-        module_name = parser.match_verbatim_scope(state)
-        # TODO: not yet implemented
-        return module_name
+    def parse(self, parser_i, state):
+        module_name = parser_i.match_verbatim_scope(state)
+        fpath = os.path.dirname(module_name)
+        fname = os.path.basename(module_name)
+        found = False
+        for folder in parser_i.include_path:
+            for ext in keywords.ctx_file_extensions:
+                npath = os.path.join(folder, fpath)
+                nname = fname + '.' + ext
+                if os.path.isfile(os.path.join(npath, nname)):
+                    fpath, fname = npath, nname
+                    found = True
+                    break
+            if found:
+                break
+        # no module found
+        if not found:
+            err_msg = lang.text('Parser.Error.Library.FileNotFound')
+            raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
+                               state.filename, 'path': state.filepath,
+                               'cause': err_msg})
+        # parse library and load functions into file
+        absp = os.path.join(fpath, fname)
+        fhandle = open(absp, 'r', encoding=keywords.ctx_file_encoding)
+        fcontent = fhandle.read()
+        fhandle.close()
+        subp = parser.Parser(filepath=fpath,
+                             filename=fname,
+                             document=fcontent,
+                             target=parser_i.target,
+                             include_path=[fpath] + parser_i.include_path)
+        subp.parse(functions=state.macros)
+        state.macros = subp.state
+        return ''
     pass
 
 
