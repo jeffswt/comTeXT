@@ -286,7 +286,7 @@ class PfDefFunction(ParserFunction):
                                state.filename, 'path': state.filepath,
                                'cause': err_msg})
         func.update_function(parser, state, params, code)
-        if is_new:
+        if is_new and params['mode'] in {'ctx', parser.target}:
             state.add_function(fname, func)
         return ''
     pass
@@ -413,7 +413,6 @@ class PfDynamicFunction(ParserFunction):
 
     def parse(self, parser, state):
         # check whether to execute
-        # FIXME: doc/web in one function name situation
         do_exec = (state.target, self.mode) in {
                 ('ctx', keywords.func_proc_src_after),
                 ('doc', keywords.func_proc_doc_after),

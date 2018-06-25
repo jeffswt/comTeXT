@@ -10,7 +10,7 @@
             "Parser.Error.Scope.UnexpectedBeginMarker": "unexpected '%s' opening",
             "Parser.Error.Scope.UnexpectedEndMarker": "unexpected '%s' closing",
             "Parser.Error.Scope.Outdented": "outdented scope, expected indentation > %d",
-            "Parser.Error.Function.UnknownFunction": "undeclared function (maybe you meant \\\\?)",
+            "Parser.Error.Function.UnknownFunction": "no suitable function found",
             "Parser.Error.Function.ExpectedLineBreak": "expected immediate line break after command",
             "Parser.Error.Function.MissingDefMarker": "expected ':' in function definition",
             "Parser.Error.Function.TooManyDefMarkers": "unexpected ':' after function name",
