@@ -30,7 +30,7 @@ def make_default_functions():
     return state.macros
 
 
-def parse_file(path, target):
+def parse_file(path, target, preload_libs=[]):
     fhandle = open('test.tex', 'r', encoding=keywords.ctx_file_encoding)
     fcontent = fhandle.read()
     fhandle.close()
@@ -39,8 +39,9 @@ def parse_file(path, target):
                          document=fcontent,
                          target=target,
                          include_path=keywords.ctx_include_path)
-    output = pobj.parse(functions=make_default_functions())
+    output = pobj.parse(functions=make_default_functions(),
+                        preload_libs=preload_libs)
     return output
 
-s = parse_file('./test.tex', 'web')
+s = parse_file('./test.tex', 'web', preload_libs=['temp'])
 print(s)

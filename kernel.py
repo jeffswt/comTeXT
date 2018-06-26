@@ -4,6 +4,7 @@ import re
 import keywords
 import lang
 import misc
+import modules
 import trie
 
 from error import ParserError
@@ -424,12 +425,14 @@ class Parser:
         d += self.close_auto_break(state)
         return d
 
-    def parse(self, functions):
+    def parse(self, functions, preload_libs=[]):
         """Parse this certain document."""
         self.extract_headers()
         state = self.create_parser_state(target='ctx',
                                          functions=functions,
                                          document=self.document)
+        for lib in preload_libs:
+            modules.PfLoadLibrary.load_library(self, state, lib)
         self.document = self.parse_document(state)
         if self.target != 'ctx':
             state = self.create_parser_state(target=self.target,

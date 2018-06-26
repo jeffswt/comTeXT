@@ -93,8 +93,8 @@ class PfChScopeEndEsc(ParserFunction):
 
 
 class PfLoadLibrary(ParserFunction):
-    def parse(self, parser_i, state):
-        module_name = parser_i.match_verbatim_scope(state)
+    @staticmethod
+    def load_library(parser_i, state, module_name):
         fpath = os.path.dirname(module_name)
         fname = os.path.basename(module_name)
         found = False
@@ -126,6 +126,11 @@ class PfLoadLibrary(ParserFunction):
                              include_path=[fpath] + parser_i.include_path)
         subp.parse(functions=state.macros)
         state.macros = subp.state.macros
+        return
+
+    def parse(self, parser_i, state):
+        module_name = parser_i.match_verbatim_scope(state)
+        PfLoadLibrary.load_library(parser_i, state, module_name)
         return ''
     pass
 
