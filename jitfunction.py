@@ -3,19 +3,31 @@ import keywords
 import misc
 
 
+class UniversalVariableStorage:
+    def initvar(self, scope, name, val):
+        class UniversalVariableScope:
+            pass
+        if not hasattr(self, scope):
+            setattr(self, scope, UniversalVariableScope())
+        shandle = getattr(self, scope)
+        if not hasattr(shandle, name):
+            setattr(shandle, name, val)
+        return
+    pass
+universal_vars = UniversalVariableStorage()
+
+
 class JitFunctionPy:
     """Function wrapper dynamically loaded through raw Python code and can be
     executed instantly with given parameters."""
     class GlobalVariableStorage:
-        def __init__(self):
-            def initvar(self, name, val):
+        def initvar(self, name, val):
                 if not hasattr(self, name):
                     setattr(self, name, val)
                 return
-            setattr(self, keywords.jit_py_globals_initfunc, initvar)
-            return
         pass
 
+    @staticmethod
     def report_argument_cnt_mismatch(function_name, arguments, args):
         # exceeded arguments
         if len(args) > len(arguments):
@@ -68,7 +80,10 @@ class JitFunctionPy:
                                                    self.arguments, args)
         # execute function
         locals = {'__args__': args}
-        globs = {keywords.jit_py_globals_classname: self.globals}
+        globs = {
+            keywords.jit_py_globals_classname: self.globals,
+            keywords.jit_py_universals_classname: universal_vars
+        }
         exec(self.binary, globs, locals)
         return locals['__result__']
     pass

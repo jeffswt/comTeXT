@@ -72,7 +72,9 @@ func_brk = {
 
 # jit function related
 jit_py_globals_classname = 'glob'
-jit_py_globals_initfunc = 'initvar'
+jit_py_globals_initfunc = 'initvar'  # require code change
+jit_py_universals_classname = 'univ'
+jit_py_universals_initfunc = 'initvar'  # requires code change
 jit_raw_variable = '#%s'
 
 # auto break utility
