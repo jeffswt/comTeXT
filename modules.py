@@ -114,8 +114,12 @@ class PfLoadLibrary(ParserFunction):
             raise ParserError({'row': state.row, 'col': state.col - 1, 'file':
                                state.filename, 'path': state.filepath,
                                'cause': err_msg})
-        # parse library and load functions into file
+        # skip if re-importing an available library
         absp = os.path.join(fpath, fname)
+        if absp in parser_i.loaded_libraries:
+            return ''
+        parser_i.loaded_libraries.add(absp)
+        # parse library and load functions into file
         fhandle = open(absp, 'r', encoding=keywords.ctx_file_encoding)
         fcontent = fhandle.read()
         fhandle.close()

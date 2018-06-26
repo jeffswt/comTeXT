@@ -43,5 +43,5 @@ def parse_file(path, target, preload_libs=[]):
                         preload_libs=preload_libs)
     return output
 
-s = parse_file('./test.tex', 'web', preload_libs=['temp'])
+s = parse_file('./test.tex', 'web', preload_libs=[])
 print(s)

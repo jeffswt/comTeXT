@@ -94,6 +94,7 @@ class Parser:
         self.state = ParserState()
         self.source = document  # original, unmodified document
         self.target = target
+        self.loaded_libraries = set()
         return
 
     def get_current_indent(self, state):
