@@ -39,8 +39,12 @@ def parse_file(path, target, preload_libs=[]):
                          document=fcontent,
                          target=target,
                          include_path=keywords.ctx_include_path)
-    output = pobj.parse(functions=make_default_functions(),
-                        preload_libs=preload_libs)
+    pobj.parse(functions=make_default_functions(),
+               preload_libs=preload_libs)
+    output = {
+        'document': pobj.document,
+        'functions': pobj.state.macros
+    }
     return output
 
 s = parse_file('./test.tex', 'web', preload_libs=[])
