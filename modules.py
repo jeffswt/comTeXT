@@ -510,6 +510,7 @@ class PfDynamicFunction(ParserFunction):
             res += keywords.kw_dyn_function % self.function_name + ''.join(
                    (keywords.scope_begin + i + keywords.scope_end)
                    for i in args)
+            state.exec_count -= 1
         return res
     pass
 
@@ -565,5 +566,6 @@ class PfDynamicEnvironment(ParserFunction):
             res += ''.join((keywords.scope_begin + i + keywords.scope_end) for
                            i in args[:-1])
             res += '\n' + args[-1] + '\n' + fn_end
+            state.exec_count -= 1
         return res
     pass
