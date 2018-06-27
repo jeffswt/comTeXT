@@ -34,6 +34,7 @@ class ParserState:
         # file properties
         self.filepath = ''
         self.filename = ''
+        self.document = ''
         # non-builtin macros
         self.macros = trie.Trie()
         return
@@ -62,6 +63,20 @@ class ParserState:
         text = self.document
         for i in range(begin, len(text)):
             self.shift_forward(text[i])
+        return
+
+    def shift_backward(self, dist):
+        text = self.document
+        for i in range(0, dist):
+            self.pos -= 1
+            self.col -= 1
+            if text[i] == '\n':
+                self.row -= 1
+        self.col = 1
+        for i in range(self.pos, -1, -1):
+            if text[i] == '\n':
+                break
+            self.col += 1
         return
 
     def add_function(self, function_name, function):

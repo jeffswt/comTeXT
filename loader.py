@@ -11,7 +11,7 @@ from error import ParserError
 def make_default_functions():
     state = kernel.ParserState()
     state.add_function(keywords.ch_escape, modules.PfChEscape())
-    state.add_function(keywords.ch_comment, modules.PfChComment())
+    state.add_function(keywords.ch_comment, modules.PfComment())
     state.add_function(keywords.scope_begin, modules.PfScopeBegin())
     state.add_function(keywords.scope_end, modules.PfScopeEnd())
     state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())

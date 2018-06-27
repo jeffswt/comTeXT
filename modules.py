@@ -31,11 +31,11 @@ class PfChEscape(ParserFunction):
     pass
 
 
-class PfChComment(ParserFunction):
+class PfComment(ParserFunction):
     def parse(self, parser, state):
         kwpos = parser.match_next_keyword(state, state.pos, '\n')
         comment = ''
-        for i in range(state.pos, kwpos + 1):
+        for i in range(state.pos, kwpos):
             comment += state.document[i]
         state.shift_forward_mul(comment)
         return ''
