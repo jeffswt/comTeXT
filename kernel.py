@@ -266,14 +266,14 @@ class Parser:
         n_header_begin = 0  # first non-empty line
         n_header_end = 0  # header end
         for i in range(0, len(lines)):
-            if len(re.sub(r' +$', r'', lines[i])) > 0:
+            if lines[i].strip() != '':
                 break
             n_header_begin += 1
         # process header if exists
-        if lines[n_header_begin].startswith(keywords.header_marker_begin):
+        if re.match(keywords.header_marker_begin, lines[i]) is not None:
             # locate header end
             for i in range(n_header_begin + 1, len(lines)):
-                if lines[i].startswith(keywords.header_marker_end):
+                if re.match(keywords.header_marker_end, lines[i]) is not None:
                     n_header_end = i
                     break
             # if header end does not exists, report error

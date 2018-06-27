@@ -11,9 +11,9 @@ ctx_include_path = [
 ]
 
 # header markers
-header_marker_begin = '---'
+header_marker_begin = r'^-{3,}$'
 header_entry_separator = '|'
-header_marker_end = '---'
+header_marker_end = r'^-{3,}$'
 
 # scope markers
 scope_begin = '{'
