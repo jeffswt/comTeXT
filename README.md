@@ -291,12 +291,13 @@ characters, you need to escape them.
 
 | Command              | Purpose                  |
 |:---------------------|:-------------------------|
-| `\ ` (Escaped space) | Whitespace (1 character) |
 | `\\`                 | Backslash (`\`)          |
+| `\ ` (Escaped space) | Whitespace (1 character) |
 | `\%`                 | Percentage sign (`%`)    |
 | `\{`                 | Left bracket (`{`)       |
 | `\}`                 | Right bracket (`}`)      |
-
+| `\$`                 | Dollar sign (`$`)        |
+ 
 ## Standard Library (cSTL)
 
 Not yet implemented.

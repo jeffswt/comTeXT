@@ -31,18 +31,6 @@ class PfChEscape(ParserFunction):
     pass
 
 
-class PfChWhitespace(ParserFunction):
-    def parse(self, parser, state):
-        return ' '
-    pass
-
-
-class PfChUnescape(ParserFunction):
-    def parse(self, parser, state):
-        return keywords.ch_escape
-    pass
-
-
 class PfChComment(ParserFunction):
     def parse(self, parser, state):
         kwpos = parser.match_next_keyword(state, state.pos, '\n')
@@ -51,12 +39,6 @@ class PfChComment(ParserFunction):
             comment += state.document[i]
         state.shift_forward_mul(comment)
         return ''
-    pass
-
-
-class PfChUncomment(ParserFunction):
-    def parse(self, parser, state):
-        return keywords.ch_comment
     pass
 
 
@@ -80,15 +62,13 @@ class PfScopeEnd(ParserFunction):
     pass
 
 
-class PfChScopeBeginEsc(ParserFunction):
-    def parse(self, parser, state):
-        return keywords.scope_begin
-    pass
+class PfChEscapedCharacter(ParserFunction):
+    def __init__(self, mapping):
+        self.mapping = mapping
+        return
 
-
-class PfChScopeEndEsc(ParserFunction):
     def parse(self, parser, state):
-        return keywords.scope_end
+        return self.mapping.get(state.target, self.mapping['ctx'])
     pass
 
 

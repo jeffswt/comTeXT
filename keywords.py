@@ -21,12 +21,7 @@ scope_end = '}'
 
 # special characters
 ch_escape = '\\'
-ch_whitespace = '\\ '
-ch_unescape = '\\\\'
 ch_comment = '%'
-ch_uncomment = '\\%'
-ch_scope_begin_esc = '\\{'
-ch_scope_end_esc = '\\}'
 
 # builtin keywords / functions
 kw_load_library = '\\usepackage'
@@ -82,3 +77,100 @@ autobrk_para_begin_doc = '\n\\paragraph{}\n'
 autobrk_para_end_doc = '\n'
 autobrk_para_begin_web = '\n<p>'
 autobrk_para_end_web = '</p>\n'
+
+# escape characters
+ch_esc_chars = {
+    # builtin
+    'unescape': {
+        'ctx': '\\\\',
+        'doc': '\\backslash',
+        'web': '\\',
+    },
+    'space': {
+        'ctx': '\\ ',
+        'doc': '\\ ',
+        'web': '&nbsp;',
+    },
+    'uncomment': {
+        'ctx': '\\%',
+        'doc': '\\%',
+        'web': '%',
+    },
+    'scope_begin': {
+        'ctx': '\\{',
+        'doc': '\\{',
+        'web': '{',
+    },
+    'scope_end': {
+        'ctx': '\\}',
+        'doc': '\\}',
+        'web': '}',
+    },
+    'dollar': {
+        'ctx': '\\$',
+        'doc': '\\$',
+        'web': '$',
+    },
+    # web
+    'dquote': {
+        'ctx': '"',
+        'doc': '"',
+        'web': '&quot;',
+    },
+    'ampersand': {
+        'ctx': '&',
+        'doc': '\\&',
+        'web': '&amp;',
+    },
+    'lt': {
+        'ctx': '<',
+        'doc': '<',
+        'web': '&lt;',
+    },
+    'rt': {
+        'ctx': '>',
+        'doc': '>',
+        'web': '&rt;',
+    },
+    # doc
+    'lquote': {
+        'ctx': '`',
+        'doc': '`',
+        'web': '‘',
+    },
+    'rquote': {
+        'ctx': '\'',
+        'doc': '\'',
+        'web': '’',
+    },
+    'ldquote': {
+        'ctx': '``',
+        'doc': '``',
+        'web': '“',
+    },
+    'rdquote': {
+        'ctx': '\'\'',
+        'doc': '\'\'',
+        'web': '”',
+    },
+    'sharp': {
+        'ctx': '#',
+        'doc': '\\#',
+        'web': '#',
+    },
+    'caret': {
+        'ctx': '^',
+        'doc': '\\^',
+        'web': '^',
+    },
+    'underline': {
+        'ctx': '_',
+        'doc': '\\_',
+        'web': '_',
+    },
+    'tilde': {
+        'ctx': '~',
+        'doc': '\\~',
+        'web': '~',
+    },
+}

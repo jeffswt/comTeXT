@@ -11,15 +11,9 @@ from error import ParserError
 def make_default_functions():
     state = kernel.ParserState()
     state.add_function(keywords.ch_escape, modules.PfChEscape())
-    state.add_function(keywords.ch_whitespace, modules.PfChWhitespace())
-    state.add_function(keywords.ch_unescape, modules.PfChUnescape())
     state.add_function(keywords.ch_comment, modules.PfChComment())
-    state.add_function(keywords.ch_uncomment, modules.PfChUncomment())
     state.add_function(keywords.scope_begin, modules.PfScopeBegin())
     state.add_function(keywords.scope_end, modules.PfScopeEnd())
-    state.add_function(keywords.ch_scope_begin_esc,
-                       modules.PfChScopeBeginEsc())
-    state.add_function(keywords.ch_scope_end_esc, modules.PfChScopeEndEsc())
     state.add_function(keywords.kw_load_library, modules.PfLoadLibrary())
     state.add_function(keywords.kw_def_function, modules.PfDefFunction())
     state.add_function(keywords.kw_def_environment, modules.PfDefEnvironment())
@@ -27,6 +21,10 @@ def make_default_functions():
                        modules.PfEnvironmentBegin())
     state.add_function(keywords.kw_environment_end, modules.PfEnvironmentEnd())
     state.add_function(keywords.kw_paragraph, modules.PfParagraph())
+    # add escape characters
+    for s in keywords.ch_esc_chars:
+        c = keywords.ch_esc_chars[s]
+        state.add_function(c['ctx'], modules.PfChEscapedCharacter(c))
     return state.macros
 
 
@@ -48,4 +46,4 @@ def parse_file(path, target, preload_libs=[]):
     return output
 
 s = parse_file('./test.tex', 'web', preload_libs=[])
-print(s)
+print(s['document'])
