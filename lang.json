@@ -1,10 +1,8 @@
 {
     "lang": {
         "en-US": {
-            "Parser.Error.Header.Unterminated": "expected document header end marker",
-            "Parser.Error.Header.EntryNoSeparator": "document header entry has no separator",
-            "Parser.Error.Header.NoEntryIndex": "no suitable index for header entry",
-            "Parser.Error.Header.ConflictingIndex": "header entry index already exists",
+            "Parser.Error.Header.Unterminated": "expected front matter's end marker",
+            "Parser.Error.Header.ParseError": "failed to parse yaml front matter, reason:\n%s",
             "Parser.Error.Scope.ExpectedBeginMarker": "expected '%s' before scope",
             "Parser.Error.Scope.ExpectedEndMarker": "expected '%s' at end of input",
             "Parser.Error.Scope.UnexpectedBeginMarker": "unexpected '%s' opening",

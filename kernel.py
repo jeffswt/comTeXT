@@ -1,5 +1,6 @@
 
 import re
+import yaml
 
 import keywords
 import lang
@@ -283,38 +284,16 @@ class Parser:
                                    self.filename, 'path': self.filepath,
                                    'cause': err_msg})
             # process header entries
-            last_header = ''
-            for i in range(n_header_begin + 1, n_header_end):
-                sects = lines[i].split(keywords.header_entry_separator)
-                # no separator, report error
-                if len(sects) <= 1:
-                    err_msg = lang.text('Parser.Error.Header.EntryNoSeparator')
-                    raise ParserError({'row': i, 'col': 0, 'file': self.
-                                       filename, 'path': self.filepath,
-                                       'cause': err_msg})
-                # work on entry to form strings
-                str_left = sects[0]
-                str_right = keywords.header_entry_separator.join(sects[1:])
-                _nl, str_left, _ = misc.split_spaces(str_left)
-                _, str_right, _ = misc.split_spaces(str_right)
-                # case empty index, use previous header
-                if str_left == '':
-                    if last_header == '':
-                        err_msg = lang.text('Parser.Error.Header.NoEntryIndex')
-                        raise ParserError({'row': i, 'col': 0, 'file':
-                                           self.filename, 'path': self.
-                                           filepath, 'cause': err_msg})
-                    self.headers[last_header] += ' ' + str_right
-                # conflicting warning
-                if str_left in self.headers:
-                    err_msg = lang.text('Parser.Error.Header.ConflictingIndex')
-                    raise ParserError({'row': i, 'col': _nl, 'file': self.
-                                       filename, 'path': self.filepath,
-                                       'cause': err_msg})
-                # insert into header list
-                last_header = str_left
-                self.headers[str_left] = str_right
-            # clearing header lines
+            head_src = '\n'.join(lines[:n_header_end][(n_header_begin + 1):])
+            try:
+                self.headers = yaml.load(head_src)
+            except Exception as err:
+                err_msg = lang.text('Parser.Error.Header.ParseError') %\
+                          str(err)
+                raise ParserError({'row': n_header_end, 'col': 0, 'file':
+                                   self.filename, 'path': self.filepath,
+                                   'cause': err_msg})
+            # clear header from range
             for i in range(n_header_begin, n_header_end + 1):
                 lines[i] = ''
         # build dom tree

@@ -80,26 +80,25 @@ whether it is contained in a paragraph or not.
 
 ### Front Matter
 
-**Note: This section will be eventually replaced with YAML.**
-
 An optional front matter can be placed at the beginning of the document with
-leading spaces and breaks. The headers would not be displayed in the output,
-but can be retrieved from the class if invoked as a module.
+leading spaces and breaks. The front matter would not be displayed in the
+output, but can be retrieved if the parser is invoked as a module.
 
-The header is initiated and terminated with a line of hyphens (`-`). Header
-entries and entry contents are separated with a vertical line (`|`). When a
-certain header entry remains empty, it indicates that the current contents
-follow those above this line. The first entry should not be empty, and vertical
-lines need not be aligned.
+The front matter is initiated and terminated with a line of hyphens (`-`)
+longer than 3 characters. The front matter contents should be written in YAML.
+These would be parsed and converted to a program-readable data block. Note that
+only the first document of this YAML markup would be parsed (if you don't know
+what this means you can ignore this message).
 
-For an example, see the code below:
+You may write the front matter like the example below:
 
 ```
 -------------------------------------------------------------------------------
- title     | Sword Art Online 17:
-           | Alicization Awakening
- author    | Kawahara Reki
- publisher | Kadokawa
+title: "Sword Art Online 17: Alicization Awakening"
+author:
+  - Kawahara Reki
+  - abec
+publisher: Kadokawa
 -------------------------------------------------------------------------------
 ```
 
@@ -108,10 +107,19 @@ Which produces the following output:
 ```json
 {
     "title": "Sword Art Online 17: Alicization Awakening",
-    "author": "Kawahara Reki",
+    "author": [
+        "Kawahara Reki",
+        "abec"
+    ],
     "publisher": "Kadokawa"
 }
 ```
+
+For more information on how to make better use of YAML, you may follow these
+links to learn more:
+
+  - <https://en.wikipedia.org/wiki/YAML#Basic_components>
+  - <http://yaml.org/spec/1.2/spec.html>
 
 ### Comments
 

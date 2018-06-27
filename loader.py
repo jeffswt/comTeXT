@@ -41,6 +41,7 @@ def parse_file(path, target, preload_libs=[]):
                preload_libs=preload_libs)
     output = {
         'document': pobj.document,
+        'headers': pobj.headers,
         'functions': pobj.state.macros
     }
     return output
