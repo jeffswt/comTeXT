@@ -10,6 +10,11 @@ from error import ParserError
 
 def make_default_functions():
     state = kernel.ParserState()
+    # add escape characters
+    for s in keywords.ch_esc_chars:
+        c = keywords.ch_esc_chars[s]
+        state.add_function(c['ctx'], modules.PfChEscapedCharacter(c))
+    # add builtin functions
     state.add_function(keywords.ch_escape, modules.PfChEscape())
     state.add_function(keywords.ch_comment, modules.PfComment())
     state.add_function(keywords.scope_begin, modules.PfScopeBegin())
@@ -21,10 +26,7 @@ def make_default_functions():
                        modules.PfEnvironmentBegin())
     state.add_function(keywords.kw_environment_end, modules.PfEnvironmentEnd())
     state.add_function(keywords.kw_paragraph, modules.PfParagraph())
-    # add escape characters
-    for s in keywords.ch_esc_chars:
-        c = keywords.ch_esc_chars[s]
-        state.add_function(c['ctx'], modules.PfChEscapedCharacter(c))
+    state.add_function(keywords.kw_math_begin, modules.PfMathMode())
     return state.macros
 
 

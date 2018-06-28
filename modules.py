@@ -377,18 +377,6 @@ class PfEnvironmentEnd(ParserFunction):
     pass
 
 
-class PfParagraph(ParserFunction):
-    def parse(self, parser, state):
-        output = parser.open_auto_break(state, reopen=True)
-        prev_abs = state.autobreak.enabled
-        state.autobreak.enabled = False
-        tmp = parser.match_parsable_scope(state)
-        state.autobreak.mode = prev_abs
-        output += tmp + parser.close_auto_break(state)
-        return output
-    pass
-
-
 class PfDynamicFunction(ParserFunction):
     def __init__(self):
         self.function_name = None
@@ -547,5 +535,59 @@ class PfDynamicEnvironment(ParserFunction):
                            i in args[:-1])
             res += '\n' + args[-1] + '\n' + fn_end
             state.exec_count -= 1
+        return res
+    pass
+
+
+class PfParagraph(ParserFunction):
+    def parse(self, parser, state):
+        output = parser.open_auto_break(state, reopen=True)
+        prev_abs = state.autobreak.enabled
+        state.autobreak.enabled = False
+        tmp = parser.match_parsable_scope(state)
+        state.autobreak.mode = prev_abs
+        output += tmp + parser.close_auto_break(state)
+        return output
+    pass
+
+
+class PfMathMode(ParserFunction):
+    def parse(self, parser, state):
+        # process auto break
+        res = parser.flush_auto_break(state)
+        if state.autobreak.enabled:
+            res += parser.open_auto_break(state)
+        # retrieve contents
+        escaped = False
+        found = False
+        output = ''
+        mark = keywords.ch_esc_chars['dollar']['default']
+        while state.pos < len(state.document):
+            ch = state.document[state.pos]
+            if ch == keywords.ch_escape:
+                escaped = not escaped
+            elif ch == mark:
+                if not escaped:
+                    state.shift_forward(ch)
+                    found = True
+                    break
+            else:
+                escaped = False
+            output += ch
+            state.shift_forward(ch)
+        # no end marker
+        if not found:
+            err_msg = lang.text('Parser.Error.Scope.ExpectedEndMarker') % mark
+            raise ParserError({'row': state.row, 'col': state.col - 1,
+                               'file': state.filename, 'path': state.
+                               filepath, 'cause': err_msg})
+        # process
+        if state.target == 'doc':
+            res += keywords.math_mode_doc % output
+        elif state.target == 'web':
+            res += keywords.math_mode_web % (output.replace('<', '\\lt').
+                                             replace('>', '\\rt'))
+        else:
+            res += keywords.math_mode_ctx % output
         return res
     pass

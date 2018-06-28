@@ -292,6 +292,17 @@ You can specify an environment in this way:
 Alongside the auto-breaking mechanism, you can also use the `\paragraph{...}`
 command to enforce a paragraph break.
 
+### Math Mode
+
+Use dollar signs (`$`) to enclose an inline math equation. To represent the
+sign within math mode, use `\$` instead. Note that `<` and `>` signs are
+automatically converted to `\lt` and `\rt` when exporting to the web. For
+example:
+
+```tex
+$e^{i\pi}+1=0$
+```
+
 ### Escaped Characters
 
 Some characters have special meanings in comTeXT. When trying to display those

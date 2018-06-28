@@ -30,6 +30,7 @@ kw_def_environment = '\\newenvironment'
 kw_environment_begin = '\\begin'
 kw_environment_end = '\\end'
 kw_paragraph = '\\paragraph'
+kw_math_begin = '$'
 
 kw_dyn_function = ch_escape + '%s'
 kw_dyn_environment_begin = kw_environment_begin + scope_begin + '%s' +\
@@ -78,36 +79,48 @@ autobrk_para_end_doc = '\n'
 autobrk_para_begin_web = '\n<p>'
 autobrk_para_end_web = '</p>\n'
 
+# math mode
+math_mode_ctx = '$%s$'
+math_mode_doc = '$%s$'
+math_mode_web = '<span class="math inline">%s</span>'
+
+
 # escape characters
 ch_esc_chars = {
     # builtin
     'unescape': {
+        'default': '\\',
         'ctx': '\\\\',
         'doc': '\\backslash',
         'web': '\\',
     },
     'space': {
+        'default': ' ',
         'ctx': '\\ ',
         'doc': '\\ ',
         'web': '&nbsp;',
     },
     'uncomment': {
+        'default': '%',
         'ctx': '\\%',
         'doc': '\\%',
         'web': '%',
     },
     'scope_begin': {
+        'default': '{',
         'ctx': '\\{',
         'doc': '\\{',
         'web': '{',
     },
     'scope_end': {
+        'default': '}',
         'ctx': '\\}',
         'doc': '\\}',
         'web': '}',
     },
     'dollar': {
-        'ctx': '\\$',
+        'default': '$',
+        'ctx': '\\$',  # binded with kw_math_begin
         'doc': '\\$',
         'web': '$',
     },
@@ -118,57 +131,68 @@ ch_esc_chars = {
         'web': '&quot;',
     },
     'ampersand': {
+        'default': '&',
         'ctx': '&',
         'doc': '\\&',
         'web': '&amp;',
     },
     'lt': {
+        'default': '<',
         'ctx': '<',
         'doc': '<',
         'web': '&lt;',
     },
     'rt': {
+        'default': '>',
         'ctx': '>',
         'doc': '>',
         'web': '&rt;',
     },
     # doc
     'lquote': {
+        'default': '`',
         'ctx': '`',
         'doc': '`',
         'web': '‘',
     },
     'rquote': {
+        'default': '\'',
         'ctx': '\'',
         'doc': '\'',
         'web': '’',
     },
     'ldquote': {
+        'default': '``',
         'ctx': '``',
         'doc': '``',
         'web': '“',
     },
     'rdquote': {
+        'default': '\'\'',
         'ctx': '\'\'',
         'doc': '\'\'',
         'web': '”',
     },
     'sharp': {
+        'default': '#',
         'ctx': '#',
         'doc': '\\#',
         'web': '#',
     },
     'caret': {
+        'default': '^',
         'ctx': '^',
         'doc': '\\^',
         'web': '^',
     },
     'underline': {
+        'default': '_',
         'ctx': '_',
         'doc': '\\_',
         'web': '_',
     },
     'tilde': {
+        'default': '~',
         'ctx': '~',
         'doc': '\\~',
         'web': '~',
