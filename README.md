@@ -92,7 +92,7 @@ what this means you can ignore this message).
 
 You may write the front matter like the example below:
 
-```
+```yaml
 -------------------------------------------------------------------------------
 title: "Sword Art Online 17: Alicization Awakening"
 author:

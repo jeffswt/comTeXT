@@ -1,0 +1,159 @@
+--------------------------------------------------------------------------------
+name: stdlib
+description: Basic text processing functions.
+--------------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% font family
+
+% serif
+\newcommand{serif: raw(text); ctx->doc; wrapinblk}{
+    \textrm{#text}
+}
+\newcommand{serif: raw(text); ctx->web; wrapinblk}{
+    <span style="font-family: serif;" class="font-family-serif">#text</span>
+}
+
+% sans-serif
+\newcommand{sansserif: raw(text); ctx->doc; wrapinblk}{
+    \textsf{#text}
+}
+\newcommand{sansserif: raw(text); ctx->web; wrapinblk}{
+    <span style="font-family: sans-serif;" class="font-family-sans-serif">#text</span>
+}
+
+% typewriter
+\newcommand{monospace: raw(text); ctx->doc; wrapinblk}{
+    \texttt{#text}
+}
+\newcommand{monospace: raw(text); ctx->web; wrapinblk}{
+    <span style="font-family: monospace;" class="font-family-monospace">#text</span>
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% font style
+
+% italic / emphasis
+\newcommand{italic: raw(text); ctx->doc; wrapinblk}{
+    \textit{#text}
+}
+\newcommand{italic: raw(text); ctx->web; wrapinblk}{
+    <em>#text</em>
+}
+\newcommand{em: raw(text); ctx->ctx; wrapinblk}{
+    \italic{text}
+}
+
+% bold / strong
+\newcommand{bold: raw(text); ctx->doc; wrapinblk}{
+    \textbf{#text}
+}
+\newcommand{bold: raw(text); ctx->web; wrapinblk}{
+    <strong>#text</strong>
+}
+\newcommand{strong: raw(text); ctx->ctx; wrapinblk}{
+    \bold{text}
+}
+
+% code
+\newcommand{code: raw(text); ctx->doc; wrapinblk}{
+    \texttt{#text}
+}
+\newcommand{code: raw(text); ctx->web; wrapinblk}{
+    <code>#text</code>
+}
+
+% strikethrough
+\newcommand{strikethrough: raw(text); ctx->doc; wrapinblk}{
+    \sout{#text}
+}
+\newcommand{strikethrough: raw(text); ctx->web; wrapinblk}{
+    <del>#text</del>
+}
+\newcommand{del: raw(text); ctx->ctx; wrapinblk}{
+    \strikethrough{text}
+}
+
+% underline
+\newcommand{underline: raw(text); ctx->doc; wrapinblk}{
+    \uline{#text}
+}
+\newcommand{underline: raw(text); ctx->web; wrapinblk}{
+    <u>#text</u>
+}
+
+% sections
+\newcommand{headings1: raw(text); ctx->doc; leaveblk}{
+    \chapter{#text}
+}
+\newcommand{headings1: raw(text); ctx->web; leaveblk}{
+    <h1>#text</h1>
+}
+\newcommand{title: raw(text); ctx->ctx; leaveblk}{
+    \headings1{#text}
+}
+
+\newcommand{headings2: raw(text); ctx->doc; leaveblk}{
+    \section{#text}
+}
+\newcommand{headings2: raw(text); ctx->web; leaveblk}{
+    <h2>#text</h2>
+}
+\newcommand{subtitle: raw(text); ctx->ctx; leaveblk}{
+    \headings2{#text}
+}
+
+\newcommand{headings3: raw(text); ctx->doc; leaveblk}{
+    \subsection{#text}
+}
+\newcommand{headings3: raw(text); ctx->web; leaveblk}{
+    <h3>#text</h3>
+}
+\newcommand{chapter: raw(text); ctx->ctx; leaveblk}{
+    \headings3{#text}
+}
+
+\newcommand{headings4: raw(text); ctx->doc; leaveblk}{
+    \subsubsection{#text}
+}
+\newcommand{headings4: raw(text); ctx->web; leaveblk}{
+    <h4>#text</h4>
+}
+\newcommand{section: raw(text); ctx->ctx; leaveblk}{
+    \headings4{#text}
+}
+
+\newcommand{headings5: raw(text); ctx->doc; leaveblk}{
+    \paragraph{#text}
+}
+\newcommand{headings5: raw(text); ctx->web; leaveblk}{
+    <h5>#text</h5>
+}
+\newcommand{subsection: raw(text); ctx->ctx; leaveblk}{
+    \headings5{#text}
+}
+
+\newcommand{headings6: raw(text); ctx->doc; leaveblk}{
+    \subparagraph{#text}
+}
+\newcommand{headings6: raw(text); ctx->web; leaveblk}{
+    <h6>#text</h6>
+}
+\newcommand{subsubsection: raw(text); ctx->ctx; leaveblk}{
+    \headings6{#text}
+}
+
+% block quote
+\newcommand{quote: raw(text); ctx->doc; wrapinblk}{
+    \begin{quote}
+    #text
+    \end{quote}
+}
+\newcommand{quote: raw(text); ctx->web; wrapinblk}{
+    <blockquote>
+    #text
+    </blockquote>
+}
+\newenvironment{quote: raw(text); ctx->ctx; wrapinblk}{
+    \quote{#text}
+}

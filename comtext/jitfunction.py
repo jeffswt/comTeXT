@@ -1,6 +1,6 @@
 
-import keywords
-import misc
+from . import keywords
+from . import misc
 
 
 class UniversalVariableStorage:

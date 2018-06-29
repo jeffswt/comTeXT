@@ -1,9 +1,9 @@
 
 import os
 
-import keywords
-import modules
-import kernel
+from . import keywords
+from . import modules
+from . import kernel
 
 from error import ParserError
 
@@ -30,23 +30,23 @@ def make_default_functions():
     return state.macros
 
 
-def parse_file(path, target, preload_libs=[]):
-    fhandle = open('test.tex', 'r', encoding=keywords.ctx_file_encoding)
+def parse_file(path, target, preload_libs=[], include_path=None):
+    if target not in {'ctx', 'doc', 'web'}:
+        raise ValueError(target)
+    fhandle = open(path, 'r', encoding=keywords.ctx_file_encoding)
     fcontent = fhandle.read()
     fhandle.close()
+    if include_path is None:
+        include_path = keywords.ctx_include_path
     pobj = kernel.Parser(filepath=os.path.dirname(path),
                          filename=os.path.basename(path),
                          document=fcontent,
                          target=target,
-                         include_path=keywords.ctx_include_path)
+                         include_path=include_path)
     pobj.parse(functions=make_default_functions(),
                preload_libs=preload_libs)
     output = {
         'document': pobj.document,
         'headers': pobj.headers,
-        'functions': pobj.state.macros
     }
     return output
-
-s = parse_file('./test.tex', 'web', preload_libs=[])
-print(s['document'])

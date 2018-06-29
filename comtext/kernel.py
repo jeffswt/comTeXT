@@ -2,13 +2,13 @@
 import re
 import yaml
 
-import keywords
-import lang
-import misc
-import modules
-import trie
+from . import keywords
+from . import lang
+from . import misc
+from . import modules
+from . import trie
 
-from error import ParserError
+from .error import ParserError
 
 
 class ParserState:

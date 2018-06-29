@@ -1,13 +1,13 @@
 
 import os
 
-import jitfunction
-import keywords
-import lang
-import misc
-import kernel
+from . import jitfunction
+from . import keywords
+from . import lang
+from . import misc
+from . import kernel
 
-from error import ParserError
+from .error import ParserError
 
 
 class ParserFunction:
